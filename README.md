@@ -25,6 +25,7 @@ Fast forward 40+ years, and I have that opportunity. WiFi modems, memory expande
   - USERNAME: SYSOP
   - PASSWORD: SYSOP
 - Load and run "BBS". There is no local mode, so you'll have to use another computer to dial into your BBS to test it out.
+- You'll need to create some sequential files to support the board's operation (see below).
 
 ## The BBS Program
 The program itself is in three parts (PRG files):
@@ -33,9 +34,9 @@ The program itself is in three parts (PRG files):
 - SYSOP : This is a utility program that can do things like create the initial user log, edit users, generate the user list, etc.
 
 ## Required SEQ Files
-In order to run the BBS, you are going to need some supporting sequential (text) files. These can contain any PETSCII codes you would like. The D64 distribution image contains all of these files that you can then modify with your preferred PETSCII editor (not included with BBS).
+In order to run the BBS, you are going to need some supporting sequential (text) files. These can contain any PETSCII codes you would like. These are not included with BBS.
 
-You need to create/edit the following SEQ files:
+You need to create the following SEQ files:
 - BANNER : Splash screen showed to user upon initial connect
 - MOTD : Message of the Day shown after user logon
 - HELP : Main Menu help screen

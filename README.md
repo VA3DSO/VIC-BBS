@@ -24,8 +24,8 @@ Fast forward 40+ years, and I have that opportunity. WiFi modems, memory expande
   - USER ID: 1
   - USERNAME: SYSOP
   - PASSWORD: SYSOP
-- Load and run "BBS". There is no local mode, so you'll have to use another computer to dial into your BBS to test it out.
 - You'll need to create some sequential files to support the board's operation (see below).
+- Load and run "BBS". There is no local mode, so you'll have to use another computer to dial into your BBS to test it out.
 
 ## The BBS Program
 The program itself is in three parts (PRG files):

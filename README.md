@@ -28,10 +28,11 @@ Fast forward 40+ years, and I have that opportunity. WiFi modems, memory expande
 - Load and run "BBS". There is no local mode, so you'll have to use another computer to dial into your BBS to test it out.
 
 ## The BBS Program
-The program itself is in three parts (PRG files):
+The program itself is in four parts (PRG files):
 - BBS : This is a BASIC program that provides the vast majority of the functions of the BBS. This can be modified by the sysop as they see fit.
 - BBS.ML : This is the machine language code that provides the I/O functions for the BBS (ie: GETLINE, SHOWFILE, PRINT, etc). Finding a good spot to host this code is the tricky part with the VIC-20. Right now, I have this code sitting in a 3K RAM expansion spot at $0400 (this requires a specific memory expansion cartridge).
 - SYSOP : This is a utility program that can do things like create the initial user log, edit users, generate the user list, etc.
+- RTC : This is specific to the VIC-2407 cartridge which has a DS12885/87 RTC chip inside it. This utility allows you to set the date/time on the RTC.
 
 ## Required SEQ Files
 In order to run the BBS, you are going to need some supporting sequential (text) files. These can contain any PETSCII codes you would like. These are not included with BBS.

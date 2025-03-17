@@ -1,7 +1,7 @@
 # VIC-BBS
 VIC-20 Bulletin Board System
 
-![ds-bbs](https://github.com/user-attachments/assets/fa8bfc52-4f83-4e6c-84f7-48201be6b00a)
+![ds-bbs](https://repository-images.githubusercontent.com/888754159/6d61e2cc-c19a-4885-9846-0ec71defc770)
 
 Back in 1983, I got my first computer - a VIC-20. I built a simple BBS program for it and ran it initially on my VIC-1600 VICModem. I had to answer each call manually! Quickly I got a 1650 modem that would auto-answer. I ran that BBS (called the Live Wire BBS) for many years before eventually moving on to running a Commodore 64 BBS (Theatre of Pain BBS) and then in the early 90's, a PC-based BBS (The Danger Zone BBS). I lost the original VIC-BBS diskettes and I've always wanted to re-do it.
 

@@ -1,3 +1,6 @@
+# NOTE:
+This branch is the legacy BASIC/ML branch that I originally built. I am re-programming the entire BBS in C using the cc65 compiler. That version will take over the main branch going forward.
+
 # VIC-BBS
 VIC-20 Bulletin Board System
 

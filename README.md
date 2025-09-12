@@ -1,3 +1,6 @@
+# NOTE:
+This readme.md is from the legacy version. I will update it to match the new C version shortly... see bbs.c for the new source code!  
+
 # VIC-BBS
 VIC-20 Bulletin Board System
 

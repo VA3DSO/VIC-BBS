@@ -64,7 +64,7 @@ The way the BBS answers calls is very simple. The "modem" is programmed to answe
 - BBS.ML : at address $0550 and $0552, there is AND #$08 and CMP #$08. That works for the physical VIC. In VICE that is changed to AND #$10 and CMP #$10.  
 - BBS : line 115 is doing and8 for a real VIC and and16 for VICE
 
-Note: Bits are numbered 0 to 7 (not 1 to 8) so bit 0=1, bit 2=4, bit 3=8, bit 4=16, etc.  
+Note: Bits are numbered 0 to 7 (not 1 to 8) so bit 0=1, bit 1=2, bit 2=4, bit 3=8, bit 4=16, etc.  
 Otherwise, the two images are the same.
 
 ## Real Time Clock

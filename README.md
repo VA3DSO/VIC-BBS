@@ -1,4 +1,4 @@
-# NOTE:
+o# NOTE:
 This readme.md is from the legacy version. I will update it to match the new C version shortly... see bbs.c for the new source code!  
 
 # VIC-BBS
@@ -69,4 +69,4 @@ Otherwise, the two images are the same.
 Note: Bits are numbered 0 to 7 (not 1 to 8) so bit 0=1, bit 1=2, bit 2=4, bit 3=8, bit 4=16, etc.  
 
 ## Real Time Clock
-The VIC has no way of knowing what the current date is, and it's time keeping ability is hampered by the fact that the internal timer pauses whenver the disk is accessed. This makes using an external real time clock (RTC) chip required to run the BBS effectively. In the BBS BASIC program, there are two subroutines at lines 3400 (get Date) and 3450 (get Time). You will likely need to modify those two subroutines to work with whatever RTC solution you have chosen. In VICE, a DS12C887 is emulated and the BBS-VICE.d64 image contains the code for working with that RTC. My physical VIC uses a custom board made by Jaystonian's Retro Shop on Tindie that includes a DS12885/87 RTC chip and 35KB of expansion RAM. So my code at 3400 and 3450 reflects how that chip works.
+The VIC has no way of knowing what the current date is, and it's time keeping ability is hampered by the fact that the internal timer pauses whenver the disk is accessed. This makes using an external real time clock (RTC) chip required to run the BBS effectively. In the BBS BASIC program, there are two subroutines at lines 3400 (get Date) and 3450 (get Time). You will likely need to modify those two subroutines to work with whatever RTC solution you have chosen. In VICE, a DS12C887 is emulated and the BBS-VICE.d64 image contains the code for working with that RTC. My physical VIC uses a VIC-2407 cartridge made by Jaystonian's Retro Shop on Tindie that includes a DS12885/87 RTC chip and 35KB of expansion RAM. So my code at 3400 and 3450 reflects how that chip works.

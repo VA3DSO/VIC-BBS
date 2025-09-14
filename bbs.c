@@ -1,49 +1,41 @@
-/*
- * WHERE I LEFT OFF:
- *
- * file editor is mostly done - just a few bugs to work out
- *
- * TASKS:
- *   'fmt' logic to filter chars [DONE]
- *   new user [DONE]
- *   change password [DONE]
- *   messages
- *   files
- *   The Wall
- *   games
- *   sysop menu [DONE]
- *     add user [DONE]
- *     edit user [DONE]
- *     generate user log [DONE]
- *     file editor (recycle for messages) [IN PROGRESS]
- *     backup
- *     restore
- *     stats
- *     create user log
- *   input/output [DONE]
- *   wait for call [DONE]
- *   main loop [DONE]
- *   local mode [DONE]
- *   showfile [DONE]
- *   login logic [DONE]
- *   load/save stats [DONE]
- *   load/save user rec [DONE]
- *   time/date stuff [DONE]
- *   wait for call screen [DONE]
- *   line input [DONE]
- *   chat [DONE]
- *   last caller [DONE]
- *   sysop status [DONE]
- *   bulletins [DONE]
- *   system info [DONE]
- *   time restrictions [DONE]
- *
- * NOTE: 100 blocks is probably the max file size for this program.
- *   Currently: 52 blocks
- *   V1.00 : 67 blocks!
- *
- */
-
+/*****************************************************************************/
+/*                                                                           */
+/*                                   bbs.c                                   */
+/*                                                                           */
+/*                  Commodore VIC-20 Bulletin Board System                   */
+/*                                                                           */
+/*                                                                           */
+/*                                                                           */
+/* (C) 1982-2025, Rick Towns                                                 */
+/*                Sudbury, Ontario                                           */
+/*                CANADA                                                     */
+/* EMail:         sysop@deepskies.com                                        */
+/*                                                                           */
+/* Acknowledgments:                                                          */
+/*   Special thanks to Francesco Sblendorio (github.com/sblendorio) for his  */
+/*   excellent victerm300 which inspired the writing of this program. Some   */
+/*   of the functions here are based on some functions in victerm300.        */
+/*                                                                           */
+/*   Specifically: print, cursor_on, cursor_off and beep                     */
+/*                                                                           */
+/* This software is provided 'as-is', without any expressed or implied       */
+/* warranty.  In no event will the authors be held liable for any damages    */
+/* arising from the use of this software.                                    */
+/*                                                                           */
+/* Permission is granted to anyone to use this software for any purpose,     */
+/* including commercial applications, and to alter it and redistribute it    */
+/* freely, subject to the following restrictions:                            */
+/*                                                                           */
+/* 1. The origin of this software must not be misrepresented; you must not   */
+/*    claim that you wrote the original software. If you use this software   */
+/*    in a product, an acknowledgment in the product documentation would be  */
+/*    appreciated but is not required.                                       */
+/* 2. Altered source versions must be plainly marked as such, and must not   */
+/*    be misrepresented as being the original software.                      */
+/* 3. This notice may not be removed or altered from any source              */
+/*    distribution.                                                          */
+/*                                                                           */
+/*****************************************************************************/
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>

@@ -5,6 +5,9 @@
 #define FALSE 0
 #define ON 1
 #define OFF 0
+#define SUCCESS 0
+#define ERROR 1
+
 #define S1 0x900A           /* 36874 - oscillator 1 (low) */
 #define S2 0x900B           /* 36875 - oscillator 2 (med) */
 #define S3 0x900C           /* 36876 - oscillator 3 (high) */
@@ -25,6 +28,7 @@
 #define BS_REPLY     0x0FFF
 #define BS_ADDRESS   0xA000
 #define BS_JUMP      "jmp $a000"
+#define BS_ACTION    0xA100
 
 /* NOTE: all fields are n+1 in size to accomodate null termination */
 typedef struct {
@@ -49,7 +53,6 @@ typedef struct {
 } SYSTEM;
 
 /* common functions */
-
 void chatmode(char);
 void loadstats();
 void savestats();
@@ -65,7 +68,7 @@ void lprint(char*);                   /* for printing locally only */
 void putch(char);
 void input(char, int, int, char);
 char getch();
-char pause();
+char pause(char);
 char errorcheck();
 void showerr(char*);
 void clear(char*);
@@ -86,15 +89,10 @@ void putch(char ch);
 void bootstrap(char*);
 
 /* utility functions */
-char nextid();
-void edituser(char, char);
-void changepassword();
-void genuserlist();
-char finduser(char*);
 char confirm();
 void askforhelp();
 char get_command();
-void newuser();
+void clearbuffer(void);
 void debug();
 
 /* global variables */

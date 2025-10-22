@@ -1,0 +1,12 @@
+del bbs
+del games
+del editor
+del files
+del sysop
+write bbs.prg bbs
+write games.prg games
+write editor.prg editor
+write files.prg files
+write sysop.prg sysop
+quit
+

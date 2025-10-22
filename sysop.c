@@ -8,6 +8,8 @@
 #include <ctype.h>
 #include "common.h"
 #include "global.h"
+#include "uutils.h"
+#include "futils.h"
 
 /* local functions */
 void sysop_menu();
@@ -15,6 +17,9 @@ void fix_stats();
 void backup();
 void restore();
 void create(char);
+void deleteuser(char);
+void validateusers(void);
+void dos_commands(void);
 
 void main(void) {
 
@@ -72,8 +77,20 @@ void sysop_menu() {
                     print("\n\nUser ID:");
                     input('A', 0, 3, FALSE);
                     i = atoi(I);
-                    if ((i > 0) && (i < 255)) {
+                    if (i > 0) {
                         edituser((char)i, TRUE);
+                    }
+                    break;
+                case '!':
+                    validateusers();
+                    break;
+                case 'D':
+                    /* delete user */
+                    print("\n\nUser ID:");
+                    input('A', 0, 3, FALSE);
+                    i = atoi(I);
+                    if ((i > 0) && (i < 255)) {
+                        deleteuser((char)i);
                     }
                     break;
                 case 'G':
@@ -81,11 +98,21 @@ void sysop_menu() {
                     genuserlist();
                     print("\nDONE!\n");
                     break;
+                case 'V':
+                    print("\223\237\022USER\222\005LOG\n\n");
+                    showfile("userlog", FALSE, 0);
+                    print("\n\n");
+                    pause(FALSE);
+                    break;
                 case 'F':
                     /* file editor */
                     POKE(BS_MSG_HI, 0);
                     POKE(BS_MSG_LO, 0);
                     bootstrap("EDITOR");
+                    break;
+                case '>':
+                    /* DOS commands! */
+                    dos_commands();
                     break;
                 case 'B':
                     /* backup user and file logs */
@@ -248,7 +275,7 @@ void backup() {
             cbm_close(15);
 
             print("\nDone!\n\n");
-            pause();
+            pause(FALSE);
         }
     }
 
@@ -321,7 +348,7 @@ void restore() {
                 genuserlist();
 
                 print("\nDone!\n\n");
-                pause();
+                pause(FALSE);
             }
         }
     }
@@ -408,8 +435,195 @@ void create(char silent) {
 
         if (silent == FALSE) {
             print("\nDONE!\n\n");
-            pause();
+            pause(FALSE);
         }
     }
 
+}
+
+void deleteuser(char id) {
+
+    char sid, yn = FALSE, p[5], e;
+    char filename[9] = "users,l,x";
+    char rec[76];
+    filename[8] = 76;
+
+    p[0] = 'p';
+    p[1] = 98;
+    p[2] = id;
+    p[3] = 0;
+    p[4] = 1;
+
+    if (U.SECURITY == 6) {
+
+        print("\223\005\022DELETE\222USER\n\n");
+        sid = U.ID;
+        U.ID = id;
+        loaduser(U.ID);
+
+        sprintf(O, "USERNAME:%s\n", U.USERNAME); print(O);
+        sprintf(O, "PASSWORD:%s\n", U.PASSWORD); print(O);
+        sprintf(O, "REALNAME:%s\n", U.REALNAME); print(O);
+        sprintf(O, "    FROM:%s\n", U.FROM); print(O);
+        sprintf(O, "SECURITY:%i\n", U.SECURITY); print(O);
+        sprintf(O, "LST CALL:%s\n\n", U.LASTLOGON); print(O);
+
+        yn = confirm();
+
+        if (yn == TRUE) {
+
+            print("Working...\n");
+
+            cbm_open(15, 8, 15, "");
+            cbm_open(1, 8, 2, filename);
+
+            e = errorcheck();
+
+            cbm_write(15, p, 5);
+            cbm_read(1, rec, 76);
+
+            e = errorcheck();
+
+            rec[0] = 255;
+
+            cbm_write(15, p, 5);
+            cbm_write(1, rec, strlen(rec));
+            cbm_write(15, p, 5);
+
+            e = errorcheck();
+
+            cbm_close(1);
+
+            e = errorcheck();
+
+            cbm_close(1);
+            cbm_close(15);
+
+            genuserlist();
+
+            loaduser(sid);
+
+            print("\nDELETED.\n");
+
+        }
+
+
+    } else {
+        print("\n\nYOU CAN'T DO THAT!\n\n");
+    }
+
+}
+
+void validateusers(void) {
+
+    char id, rec[76], user[13], numcalls[6], lastcall[5], ch = 0;
+    int c = 0;
+
+    print("\n\nUser Validation:\n\n");
+    print("\022USERNAME    \222 \022CLS\222 \022LAST\222\n");
+
+    if (open_userfile() == 0) {
+
+        for (id = 1; id < 255; id++) {
+
+            if (gotouser(id) == 0) {
+
+                clear(rec);
+                cbm_read(1, rec, 76);
+
+                if (rec[0] != 255) {
+
+                    strncpy(user, rec, 12);
+                    user[12] = '\0';
+
+                    strncpy(numcalls, rec + 58, 5);
+                    numcalls[5] = '\0';
+                    trim(numcalls);
+
+                    lastcall[0] = rec[68];
+                    lastcall[1] = rec[69];
+                    lastcall[2] = rec[72];
+                    lastcall[3] = rec[73];
+                    lastcall[4] = '\0';
+
+                    clear(O);
+                    sprintf(O, "%12s %-3s %s\n", user, numcalls, lastcall); print(O);
+
+                    c++;
+                    if (c >= 21) {
+                        ch = pause(TRUE);
+                        if (ch == 'Q') {
+                            id = 255;
+                            break;
+                        }
+                        c = 0;
+                    }
+
+                }
+            }
+        }
+
+        pause(FALSE);
+    }
+
+    close_userfile();
+
+
+}
+
+void dos_commands(void) {
+
+    char e, drive = 8, temp[3], partition;
+    int i;
+
+    char dossing = TRUE;
+
+    print("\223\005\022DOS\222SHELL\n\n");
+
+    print("Press ? for help!");
+
+    do {
+
+        e = 0;
+
+        print("\n\n>");
+        input('A', 0, 32, FALSE);
+
+        if (strlen(I) == 0) {
+            dossing = FALSE;
+        } else if (I[0] == '$') {
+            print("\nPart? (0-9) >");
+            partition = getch(); putch(partition);
+            directory(drive, partition);
+        } else if (I[0] == '@') {
+            e = errorcheck();
+            if (e == 0) {
+                print("\n\02200 OK\222\n");
+            }
+        } else if (I[0] == '#') {
+            clear(temp);
+            temp[0] = I[1];
+            if ((I[2] == '0') || (I[2] == '1' )) {
+                temp[1] = I[2];
+            } else {
+                temp[1] = '\0';
+            }
+            temp[2] = '\0';
+            i = atoi(temp);
+            if ((i >= 8) && (i <= 11)) {
+                drive = (char)i;
+                sprintf(O, "\nDrive = %i\n", drive); print(O);
+            }
+        } else if (I[0] == '?') {
+            showfile("dosshell", FALSE, 0);
+        } else {
+            cbm_open(15, drive, 15, I);
+            e = errorcheck();
+            if (e == 0) {
+                print("\n\02200 OK\222\n");
+            }
+            cbm_close(15);
+        }
+
+    } while (dossing == TRUE);
 }

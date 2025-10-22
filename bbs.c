@@ -46,6 +46,8 @@
 #include <ctype.h>
 #include "common.h"
 #include "bbs.h"
+#include "uutils.h"
+#include "futils.h"
 
 static char RELOAD = FALSE;
 
@@ -64,7 +66,7 @@ void main(void) {
 
         if (open_userfile() == 62) {
             print("\n\nUSER file missing!\n\nCreate from SYSOP\nmenu!\n\n");
-            pause();
+            pause(FALSE);
         } else {
             close_userfile();
         }
@@ -104,7 +106,7 @@ void main(void) {
 
         if (ONLINE == FALSE) {
 
-            print("\223\237\016\010\022VIC\222\005BBS           \237V1.01\005\n");
+            print("\223\237\016\010\022VIC\222\005BBS           \237V1.03\005\n");
             print("Last : ");
             print(S.LASTCALLER);
             print("\n");
@@ -173,6 +175,9 @@ void main(void) {
         }
 
         if (ONLINE == TRUE) {
+
+            /* comment the following 'if' statement out if you'd like local mode to
+             * have to go through login process instead of jumping to Command */
 
             if (LOCALMODE == TRUE) {
                 id = 1;
@@ -343,7 +348,7 @@ void logon() {
                     print("\223\237\022USER\222\005LOG\n\n");
                     showfile("userlog", FALSE, 0);
                     print("\n\n");
-                    pause();
+                    pause(FALSE);
                     tries--;
 
                 } else {
@@ -362,16 +367,25 @@ void logon() {
 
                         if (loaduser(U.ID) == 0) {
 
-                            if (strcmp(strupper(U.PASSWORD), strupper(I)) == 0) {
+                            if (U.USERNAME[0] != 255) {
 
-                                /* SUCCESS! */
-                                done = TRUE;
-                                break;
+                                if (strcmp(strupper(U.PASSWORD), strupper(I)) == 0) {
+
+                                    /* SUCCESS! */
+                                    done = TRUE;
+                                    break;
+
+                                } else {
+
+                                    U.ID = 0;
+                                    print("\nINVALID PASSWORD!\n");
+
+                                }
 
                             } else {
 
                                 U.ID = 0;
-                                print("\nINVALID PASSWORD!\n");
+                                print("\nINVALID ID!\n");
 
                             }
 
@@ -429,7 +443,7 @@ void welcome() {
     strcpy(S.LASTCALLER, U.USERNAME);
     savestats();
 
-    pause();
+    pause(FALSE);
 
 }
 
@@ -470,11 +484,35 @@ void main_menu() {
             case 'W':
                 the_wall();
                 break;
+            case '$':
+                /* directory of downloads: partition 2 */
+                directory(8, '2');
+                break;
+            case 'F':
+                showfile("filelist", FALSE, 0);
+                break;
+            case 'D':
+                if (U.SECURITY >= 3) {
+                    POKE(BS_ACTION, 1);
+                    bootstrap("FILES");
+                } else {
+                    askforhelp();
+                }
+                break;
+            case 'U':
+                if (U.SECURITY >= 3) {
+                    showfile("upnote", TRUE, 0);
+                    POKE(BS_ACTION, 2);
+                    bootstrap("FILES");
+                } else {
+                    askforhelp();
+                }
+                break;
             case 'V':
                 print("\223\237\022USER\222\005LOG\n\n");
                 showfile("userlog", FALSE, 0);
                 print("\n\n");
-                pause();
+                pause(FALSE);
                 break;
             case 'I':
                 showfile("info", TRUE, 0);
@@ -594,7 +632,7 @@ void bulletins() {
                 /* do nothing... it's gonna show the listing again... */
             } else {
                 print("\nPress ? for List!");
-                pause();
+                pause(FALSE);
             }
 
             online = carrierdetect();
@@ -635,6 +673,8 @@ void read_messages() {
 
         sprintf(O, "Low Msg: %i\nHigh Msg: %i\nLast Read: %i\n", lm, S.NUMMESGS, lr);
         print(O);
+
+        clear(W);
 
         do {
 
@@ -804,7 +844,7 @@ void post_message(int replynum) {
                 }
                 bootstrap("EDITOR");
             } else {
-                pause();
+                pause(FALSE);
             }
         }
 
@@ -884,6 +924,8 @@ void the_wall() {
 }
 
 void hangup() {
+
+    clearbuffer();
 
     sleep();
     POKE(RS,151);

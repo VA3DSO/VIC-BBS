@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include "common.h"
+#include "futils.h"
 #include "global.h"
 
 /* local functions */
@@ -15,7 +16,6 @@ char file_edit(char*, char, int);
 unsigned int file_load(char*, char);
 void file_save(char*, char, unsigned int);
 void file_viewer(unsigned int, char, int);
-void directory(char);
 
 void main(void) {
 
@@ -91,7 +91,7 @@ void main(void) {
 
 char file_editor(int msgnum) {
 
-    char filename[32], fullname[32], drive, err[32], yn, res = 1, e, done = TRUE;
+    char filename[32], fullname[32], drive, err[32], yn, res = 1, e, done = TRUE, partition;
 
     if (msgnum == 0) {
         print("\223\005\022FILE\222EDITOR\n\n");
@@ -102,14 +102,18 @@ char file_editor(int msgnum) {
             trim(filename);
             print("\nDrive? (8-10)\n>");
             input('A', 0, 2, FALSE);
+            print("\nPart? (0-9)\n>");
+            partition = getch(); putch(partition); putch(13);
             if (strlen(I) > 0) {
                 drive = (char)atoi(I);
                 if (strcmp(filename,"$") == 0) {
-                    directory(drive);
+                    directory(drive, partition);
                     done = FALSE;
                 } else {
-                    strcpy(fullname, filename);
-                    strcat(fullname, ",s,r");
+
+                    sprintf(I, "@%c:%s", partition, filename);
+                    strcpy(filename, I);
+                    sprintf(fullname, "%s,s,r", I);
 
                     cbm_open(15,drive,15,"");
                     cbm_open(2,drive,2,fullname);
@@ -117,7 +121,8 @@ char file_editor(int msgnum) {
                     cbm_read(15, err, 2);
                     err[2] = 0;
 
-                    cbm_write(15, "i0", 2);
+                    sprintf(O, "i%c", partition);
+                    cbm_write(15, O, strlen(O));
 
                     cbm_close(2);
                     cbm_close(15);
@@ -126,8 +131,8 @@ char file_editor(int msgnum) {
                         print("New file... create?\n");
                         yn = confirm();
                         if (yn == TRUE) {
-                            strcpy(fullname, filename);
-                            strcat(fullname, ",s,w");
+
+                            sprintf(fullname, "%s,s,w", filename);
                             cbm_open(2,drive,2,fullname);
                             cbm_close(2);
                             file_edit(filename, drive, 0);
@@ -136,13 +141,14 @@ char file_editor(int msgnum) {
                         file_edit(filename, drive, 0);
                     }
 
+
                 }
 
             }
         }
     } else {
 
-        res = file_edit("temp", 8, msgnum);
+        res = file_edit("@0:temp", 8, msgnum);
 
         if (res == 0) {
             /* rename temp to m xxxx */
@@ -221,7 +227,7 @@ char file_edit(char *filename, char drive, int msgnum) {
                             sprintf(O,"%u:%i ", K, PEEK(K)); print(O);
                         }
                         print("\n");
-                        pause();
+                        pause(FALSE);
                         file_viewer(QX, FALSE, 0);
                         break;
                     case '!':
@@ -233,13 +239,13 @@ char file_edit(char *filename, char drive, int msgnum) {
                             j++;
                             if (j >= 21) {
                                 j = 0;
-                                if(pause() == 'Q') {
+                                if(pause(TRUE) == 'Q') {
                                     K = QR + QX;
                                     break;
                                 }
                             }
                         }
-                        pause();
+                        pause(FALSE);
                         break;
                     case 'A':
                         /* abort */
@@ -275,7 +281,7 @@ char file_edit(char *filename, char drive, int msgnum) {
                         K = QZ - (QR + QX);
                         sprintf(O, "\n%u bytes free.\n", K);
                         print(O);
-                        pause();
+                        pause(FALSE);
                         file_viewer(QX, FALSE, 0);
                         break;
                     case 'E':
@@ -360,7 +366,7 @@ char file_edit(char *filename, char drive, int msgnum) {
                                 print("\022NOT FOUND\n");
                             }
                         }
-                        pause();
+                        pause(FALSE);
                         file_viewer(QX, FALSE, 0);
                         break;
                         case 'D':
@@ -416,7 +422,7 @@ char file_edit(char *filename, char drive, int msgnum) {
                             } else {
                                 print("\nNOTHING TO DELETE!\n");
                             }
-                            pause();
+                            pause(FALSE);
                             file_viewer(QX, FALSE, 0);
                             break;
                         case 'I':
@@ -462,7 +468,7 @@ char file_edit(char *filename, char drive, int msgnum) {
                                 }
 
                             }
-                            pause();
+                            pause(FALSE);
                             file_viewer(QX, FALSE, 0);
                             break;
                         case 'C':
@@ -471,7 +477,7 @@ char file_edit(char *filename, char drive, int msgnum) {
                             if (yn == TRUE) {
                                 QX = 0;
                                 print("DONE!\n");
-                                pause();
+                                pause(FALSE);
                             }
                             file_viewer(QX, FALSE, 0);
                             break;
@@ -572,9 +578,7 @@ void file_save(char *filename, char drive, unsigned int QX) {
     char fullname[32], e;
 
     /* SAVE FILE FROM MEMORY */
-    strcpy(fullname, "@0:");
-    strcat(fullname, filename);
-    strcat(fullname, ",s,w");
+    sprintf(fullname, "%s,s,w", filename);
 
     cbm_open(15,drive,15,"");
     cbm_open(2,drive,2,fullname);
@@ -603,7 +607,7 @@ void file_save(char *filename, char drive, unsigned int QX) {
         print("DONE!\n");
 
     } else {
-        pause();
+        pause(FALSE);
     }
 
     cbm_close(2);
@@ -659,7 +663,7 @@ void file_viewer(unsigned int QX, char listing, int offset) {
         }
 
         if (ln >= 21) {
-            ch = pause();
+            ch = pause(TRUE);
             ln = 0;
             if (ch == 'Q') {
                 K = QX + QR;
@@ -668,57 +672,3 @@ void file_viewer(unsigned int QX, char listing, int offset) {
     }
 }
 
-void directory(char drive) {
-
-    struct cbm_dirent dir;
-    char type, e;
-    unsigned char res;
-    int c = 1;
-
-    cbm_open(15, drive, 15, "");
-    res = cbm_opendir(1, drive, "$");
-
-    e = errorcheck();
-
-    if ((res == 0) && (e == 0)) {
-
-        cbm_readdir(1, &dir); // disk header
-
-        sprintf(O, "\n\n\022disk:%-15s\n", dir.name);
-        print(O);
-
-        while (cbm_readdir(1, &dir) == 0)
-        {
-            switch (dir.type) {
-                case 16:
-                    type = 'S';
-                    break;
-                case 17:
-                    type = 'P';
-                    break;
-                case 19:
-                    type = 'R';
-                    break;
-                default:
-                    type = '?';
-            }
-            sprintf(O, "%-3u %-15s %c\n", dir.size, dir.name, type);
-            print(O);
-            c++;
-            if (c >= 21) {
-                pause();
-                c = 0;
-            }
-        }
-
-        sprintf(O, "\n%u blocks free.\n\n", dir.size);
-        print(O);
-
-        cbm_closedir(1);
-        cbm_close(15);
-
-        pause();
-
-    }
-
-}

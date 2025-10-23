@@ -130,7 +130,9 @@ The following functions are available to the Assistant Sysop (5) and Sysop (6):
 - [H] or [?] Help (5): Display the Sysop menu
 
 ## About Xmodem File Transfers
-The system is currently programmed to use just one drive (8) which on my system is an SD card. On VICE you could use a CMD-HD image (.DHD). Either way, you can have multiple partitions on the same drive. For the default C code, it expects:
+The Xmodem that has been implemented here is the original specification with one small change. It uses 128-byte packets, and an 8-bit CRC check. The original spec (which came from CP/M) uses char[26] to pad out files to reach the 128-byte packet size. In our implementation, we use char[0] instead (which also appears to be what other Commodore programs like Color64 and CCGMS do).  
+  
+For directories, this system is currently programmed to use just one drive (8) which on my system is an SD card. On VICE you could use a CMD-HD image (.DHD). Either way, you can have multiple partitions on the same drive. For the default C code, it expects:
 - Partition 1 : the system drive that includes all the programs and text files, as well as the User Log
 - Partition 2 : the Downloads area
 - Partition 3 : the Uploads area

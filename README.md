@@ -139,7 +139,7 @@ Note that Partition 1 can be referred to as Partition 0 as well (so @0: and @1: 
 
 When a user uploads a file to the BBS, the file is saved in Partition 3, and the 4-line file description the user provides gets appended to a file called "uploads" which is an SEQ file on Partition 1. You can then manually validate each uploaded file, and if approved copy it from Partition 3 to Partition 2 and then manually edit the filelist SEQ file to be updated with the new file description.  
 
-For example, to move a file called "test" from Partition 3 to Partition 2...
+For example, to copy a file called "test" from Partition 3 to Partition 2...
 ```
 OPEN15,8,15,"C2:TEST=3:TEST":CLOSE15   < Commodore BASIC
 @C2:TEST=3:TEST                        < JiffyDOS

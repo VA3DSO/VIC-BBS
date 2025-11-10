@@ -113,6 +113,7 @@ The following functions are available from the Main Menu. The key press that act
 - [T] Time Left (1): Show how many minutes remaining in the current call
 - [O] Log Off (1): End the call
 - [H] or [?] Help (1): Show the menu SEQ for the user's security level (ie: menu3)
+- [Z] Sysop Menu (5): Go to the Sysop Menu
 
 ## Sysop Menu Functions
 The following functions are available to the Assistant Sysop (5) and Sysop (6):

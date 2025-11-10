@@ -28,7 +28,7 @@
 #define F5 135
 #define F7 136
 
-#define MAXRETRIES 25
+#define MAXRETRIES 10
 
 /* local functions */
 void rec_file(void);
@@ -37,9 +37,6 @@ char inbyte(char, char*);
 void outbyte(char);
 void enjoythesilence(void);
 void pad(char*);
-
-/* local global variables */
-static char DEBUGMODE = FALSE;
 
 void main(void) {
 
@@ -138,6 +135,7 @@ void rec_file(void) {
         cbm_write(3, O, strlen(O));
 
         print("\n4 Line Desc:\n");
+        print("(/s to save)\n");
         clear(W);
 
         for (t = 0; t < 4; t++) {
@@ -151,11 +149,17 @@ void rec_file(void) {
                 input('W', 0, 21, FALSE);
             }
 
-            if (strlen(I) > 0) {
-                strcat(I, "\n");
-                cbm_write(3, I, strlen(I));
-            } else {
+            strcpy(O, I);
 
+            if (strlen(I) > 0) {
+                if (strcmp(strupper(O), "/S") == 0) {
+                    t = 4;
+                    break;
+                } else {
+                    strcat(I, "\n");
+                    cbm_write(3, I, strlen(I));
+                }
+            } else {
                 if (t == 0) {
                     go = FALSE;
                 }
@@ -190,7 +194,7 @@ void rec_file(void) {
                 /* get control byte */
                 ch = inbyte('M', &status);
 
-                if ((ch != 0) || (status != OK)) {
+                if ((ch != 0) || (status == OK)) {
                     t = MAXRETRIES;
                     break;
                 }
@@ -202,7 +206,7 @@ void rec_file(void) {
                 if (starting == TRUE) {
                     starting = FALSE;
                 } else {
-                    ch = inbyte('S', &status);
+                    ch = inbyte('M', &status);
                 }
 
                 if ((ch == 1) && (status == OK)) {
@@ -215,11 +219,11 @@ void rec_file(void) {
                     badbytes = 0;
                     m = 0;
 
-                    for (i = 0; i < 131; i++) {
+                    for (i = 0; i <= 130; i++) {
                         ch = inbyte('S', &status);
                         if (status == OK) {
                             packet[i] = ch;
-                            if ((i > 1) && (i < 130)) {
+                            if ((i >= 2) && (i <= 129)) {
                                 m = m + ch;
                             }
                             lprint("\237+");
@@ -239,18 +243,18 @@ void rec_file(void) {
                         if ((blk == p) && (255 - chk == blk) && (checksum == m)) {
 
                             /* its good! save it! */
-                            for (i = 2; i < 130; ++i) {
+                            for (i = 2; i <= 129; ++i) {
                                 cbm_k_ckout(3);
                                 cbm_k_bsout(packet[i]);
                                 cbm_k_clrch();
                             }
                             lprint("\036\272");
                             p++;
+                            retries = 0;
                             outbyte(ACK);
 
                         } else {
-
-                            badbytes = 1;
+                            badbytes++;
                         }
 
                     }
@@ -259,20 +263,11 @@ void rec_file(void) {
 
                         /* bad packet! */
                         lprint("\034X");
-                        enjoythesilence();
+                        /* enjoythesilence(); */
                         outbyte(NAK);
 
                         retries++;
 
-                        if (retries > MAXRETRIES) {
-                            status = CANCEL;
-                            lprint("\034C");
-                            outbyte(CAN);
-                            outbyte(CAN);
-                            outbyte(CAN);
-                            receiving = FALSE;
-                            break;
-                        }
                     }
 
 
@@ -283,8 +278,22 @@ void rec_file(void) {
                     outbyte(ACK);
                     receiving = FALSE;
 
+                } else if ((ch == 24) && (status == OK)) {
+
+                    retries = MAXRETRIES;
+
                 } else {
 
+                    /* unexpected packet! */
+                    lprint("\034?");
+                    /* enjoythesilence(); */
+                    outbyte(NAK);
+
+                    retries++;
+
+                }
+
+                if (retries > MAXRETRIES) {
                     status = CANCEL;
                     lprint("\034C");
                     outbyte(CAN);
@@ -292,7 +301,6 @@ void rec_file(void) {
                     outbyte(CAN);
                     receiving = FALSE;
                     break;
-
                 }
 
             } while (receiving == TRUE);
@@ -307,7 +315,7 @@ void rec_file(void) {
 
         cbm_close(3);
         if (status != OK) {
-            sprintf(O, "s2:%s", scratch);
+            sprintf(O, "s3:%s", scratch);
             cbm_write(15, O, strlen(O));
         }
         cbm_close(15);
@@ -520,7 +528,7 @@ void snd_file(void) {
 
 char inbyte(char delay, char *status) {
 
-    char ch = 0, s, lch, st;
+    char ch = 0, s, lch;
     char listening = TRUE;
 
     *status = OK;
@@ -528,12 +536,12 @@ char inbyte(char delay, char *status) {
     if (delay == 'S') {
         /* short delay ~ 10 secs */
         delay = 3;
+    } else if (delay == 'M') {
+        /* micro dealy ~ 3 secs */
+        delay = 1;
     } else if (delay == 'L') {
         /* long delay ~ 100 secs */
         delay = 24;
-    } else if (delay == 'M') {
-        /* micro delay < 3 secs */
-        delay = 1;
     } else {
         delay = 3;
     }
@@ -548,10 +556,9 @@ char inbyte(char delay, char *status) {
 
         /* XLOCAL */
         lch = cbm_k_getin();
-        if (lch == F7) {
-            ch = 255;
+        if (lch != 0) {
             *status = CANCEL;
-            listening = FALSE;
+            ch = CAN;
             break;
         }
 
@@ -570,20 +577,9 @@ char inbyte(char delay, char *status) {
             listening = FALSE;
         }
 
-        st = carrierdetect();
-
-        if (st == FALSE) {
-            ch = 255;
-            *status = CANCEL;
-            listening = FALSE;
-            break;
-        }
-
     } while (listening == TRUE);
 
-    if (DEBUGMODE == TRUE) {
-        sprintf(O,"r%i ", ch); lprint(O);
-    }
+    /* sprintf(I, "REC:%i ", ch); print(I); */
 
     return ch;
 
@@ -593,15 +589,14 @@ void outbyte(char ch) {
     cbm_k_ckout(5);
     cbm_k_bsout(ch);
     cbm_k_clrch();
-    if (DEBUGMODE == TRUE) {
-        sprintf(O,"s%i ", ch); lprint(O);
-    }
 }
 
 void enjoythesilence(void) {
 
     char ch, r;
     char outer = TRUE, inner = TRUE;
+
+    clearbuffer();
 
     POKE(JCL, 0);
 

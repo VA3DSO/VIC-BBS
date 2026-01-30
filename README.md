@@ -146,3 +146,12 @@ Likely if file uploads and downloads become popular, I will add extra features l
 
 ## Who To Contact?
 If you have any questions about this project, please email sysop@deepskies.com and we'll do our best to help you out! Thanks for checking this project out!
+
+## Release v1.04 (2026-01-30)
+
+- **Client-side file break**: You can now press **SPACE** while viewing a SEQ file to abort early. This flushes any pending RS-232 input before display and polls the RS-232 channel for a space character during streaming to allow the remote user to quit viewing a file without waiting for it to finish. (Related: Issue #37, PR #45)
+
+Testing notes:
+- In VICE or on real hardware with a WiFi modem, start a session and open any SEQ file (e.g., `filelist` or a message). While the file is being displayed, press the **space** key — the display should end immediately.
+
+See the full release notes: https://github.com/VA3DSO/VIC-BBS/releases/tag/v1.04

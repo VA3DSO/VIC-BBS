@@ -220,9 +220,9 @@ void bootstrap(char *module) {
         strcpy(remark, "Just a sec...");
     }
 
-    if (strcmp(module, "FUTURE") == 0) {
+    if (strcmp(module, "RSA") == 0) {
         sw = 5;
-        strcpy(remark, "Somthing witty...");
+        strcpy(remark, "One more hop...");
     }
 
     if (strcmp(module, "SYSOP") == 0) {
@@ -334,6 +334,9 @@ void savestats() {
     clear(buffer);
     clear(t);
 
+    if (strlen(S.LASTCALLER) < 1) {
+        strcpy(S.LASTCALLER, "NOBODY");
+    }
     strcpy(buffer, S.LASTCALLER);
     strcat(buffer, "\n");
 
@@ -440,7 +443,7 @@ void saveuser(char id) {
 
 }
 
-int showfile(char *filename, char pauseatend, int msgnum) {
+int showfile(char *filename, char drive, char pauseatend, int msgnum) {
 
     char fullfile[32], st, a, e, ch;
     char qe = FALSE, fs = FALSE;
@@ -450,8 +453,8 @@ int showfile(char *filename, char pauseatend, int msgnum) {
     strcpy(fullfile, filename);
     strcat(fullfile, ",s,r");
 
-    cbm_open(15,8,15,"");
-    cbm_open(2,8,2,fullfile);
+    cbm_open(15, drive, 15, "");
+    cbm_open(2, drive, 2, fullfile);
 
     e = errorcheck();
 
@@ -460,6 +463,9 @@ int showfile(char *filename, char pauseatend, int msgnum) {
         st = 0;
         c = 0;
         clear(W);
+
+        /* flush any pending RS-232 input so we don't immediately quit */
+        clearbuffer();
 
         if (msgnum > 0) {
 
@@ -485,6 +491,18 @@ int showfile(char *filename, char pauseatend, int msgnum) {
             if (st == 0) {
                 putch(a);
                 c++;
+
+                /* check for a space from the remote side to end viewing early */
+                cbm_k_chkin(5);
+                ch = cbm_k_getin();
+                cbm_k_clrch();
+                if (ch == ' ') {
+                    /* client requested early quit */
+                    st = 64;
+                    qe = TRUE;
+                    break;
+                }
+
                 /* save subject in W (word wrap) variable */
                 if ((ln == 4) && (a != 13) && (c > 5) && (fs == FALSE)) {
                     W[sl] = a;
@@ -509,6 +527,7 @@ int showfile(char *filename, char pauseatend, int msgnum) {
             } else if (st == 64) {
                 /* end of file */
             } else {
+                sprintf(O, "\n\n\022ERR:%d\222\n\n", st); print(O);
                 e = errorcheck();
             }
 
@@ -619,6 +638,14 @@ char loaduser(char id) {
         strncpy(O, rec + 63, 5);
         trim(O);
         U.LASTREAD = atoi(O);
+        
+        if (U.LASTREAD < S.NUMMESGS - 255) {
+            U.LASTREAD = S.NUMMESGS - 255;
+        }
+
+        if (U.LASTREAD > S.NUMMESGS) {
+            U.LASTREAD = S.NUMMESGS;
+        }
 
         clear(O);
 
@@ -911,7 +938,7 @@ int RTCconvert(int i) {
 
 char confirm() {
 
-    char ch, done = FALSE, answer = FALSE;
+    char ch, done = FALSE, answer = FALSE, st;
 
     print("\n\nAre you sure? ");
 
@@ -922,8 +949,15 @@ char confirm() {
             print("Y\n");
             answer = TRUE;
             done = TRUE;
-        } else if ((ch == 'N' || ch == 'n')) {
+        } else if ((ch == 'N') || (ch == 'n')) {
             print("N\n");
+            done = TRUE;
+        }
+
+        st = carrierdetect();
+
+        if (st == FALSE) {
+            ch = 'Y';
             done = TRUE;
         }
 
@@ -961,7 +995,8 @@ void chatmode(char page) {
     if (page == TRUE) {
 
         print("\005\nPaging the Sysop:\n");
-        print("\n\nPress \022 F3 \222 to chat!\n\n");
+        sprintf(O, "\022%s\222\n", U.USERNAME); lprint(O);
+        lprint("\n\nPress \022 F3 \222 to chat!\n\n");
 
         for (t=0; t<20; t++) {
             beep();
@@ -995,10 +1030,10 @@ void chatmode(char page) {
         print("\223\005CHAT MODE!\n\n");
         print("\007");
         print("type /x to exit...\n\n");
-        print("\nUSER:");
-        print(U.USERNAME);
-        print("\n\n");
-        print("\022 F3 \222 to exit...\n\n");
+        lprint("\nUSER: \022");
+        lprint(U.USERNAME);
+        lprint("\n\n");
+        lprint("\022 F3 \222 to exit...\n\n");
 
         do {
 
@@ -1070,7 +1105,8 @@ void input(char fmt, int min, int max, char editmode) {
      * fmt =
      *   'A' alphanumeric,
      *   'W' word wrap alphanumeric,
-     *   'P' password
+     *   'P' password'
+     *   'G' game mode - not char[13] at end of input
      *
      * min = 0 to 40
      *
@@ -1086,6 +1122,7 @@ void input(char fmt, int min, int max, char editmode) {
 
     int i, j, k, c;
     char done = FALSE, ch, hc = 0;
+    char tries = 0;
 
     /* reduce max by 1 since we count starting at zero instead of one */
     max--;
@@ -1113,7 +1150,7 @@ void input(char fmt, int min, int max, char editmode) {
         ch = getch();
 
         /* end line early if word wrap is on */
-        if ((ch == 32) && (fmt == 'W') && (i > 18)) {
+        if ((ch == 32) && (fmt == 'W') && (i > 19)) {
             ch = 13;
         }
 
@@ -1122,13 +1159,17 @@ void input(char fmt, int min, int max, char editmode) {
             break;
         } else if (ch == 13) {
             if (hc >= min) {
-                putch(ch);
+                if (fmt != 'G') {
+                    putch(ch);
+                }
                 done = TRUE;
                 break;
             } else {
-                sprintf(O, "\n\n\022MIN %i CHARS REQ\nTry again...\n>", min); print(O);
-                clear(I);
-                i = 0;
+                if (fmt != 'G') {
+                    sprintf(O, "\n\n\022MIN %i CHARS REQ\nTry again...\n>", min); print(O);
+                    clear(I);
+                    i = 0;
+                }
             }
         } else if (ch == 20) {
             if (i > 0) {
@@ -1170,8 +1211,8 @@ void input(char fmt, int min, int max, char editmode) {
                                 putch(20);
                                 I[k] = '\0';
                             }
-                            putch(13);
                             W[c] = '\0';
+                            putch(13);
                             j = 0;
                             done = TRUE;
                             break;
@@ -1233,5 +1274,21 @@ void debug() {
     sprintf(O, "ONLINE: %i\n", ONLINE); print(O);
 
     pause(FALSE);
+
+}
+
+char gpause() {
+
+    char ch;
+
+    print("   - hit any key - ");
+
+    ch = getch();
+
+    if (ch == 255) {
+        ch = 'q';
+    }
+
+    return ch;
 
 }

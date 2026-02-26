@@ -135,19 +135,30 @@ char getch(void) {
         if(ch == 136) {                /* F7 - HANG UP */
             LOCALMODE = FALSE;
             ch = 255;
+
         } else if (ch == 134) {        /* F3 - CHAT MODE */
             chatmode(FALSE);
+
         } else if ((ch == 0) && (LOCALMODE == FALSE)) {
+
             /* XREMOTE */
             cbm_k_chkin(5);
             ch = cbm_k_getin();
             cbm_k_clrch();
+
+            /* FILTER OUT FUNCTION KEYS FROM REMOTE UNLESS SYSOP */
             if ((ch >= 133) && (ch <= 140) && (U.SECURITY < 5)) {
                 ch = 0;
             }
+
+            /* FIX UPPER CASE CHARS IF REMOTE IS ASCII TERMINAL */
+            if ((ch >= 97) && (ch <= 122)) {
+                ch = ch + 96;
+            }
+
         }
 
-        /* remove shifted-space! */
+        /* REMOVE SHIFTED-SPACE */
         if (ch == 160) {
             ch = 32;
         }

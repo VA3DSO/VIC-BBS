@@ -39,6 +39,7 @@ desktop.ini
 *.swp
 *.swo
 ~$*.xlsm
+/Backup/
 
 # --- Worker Files ---
 ASCII Notes.txt

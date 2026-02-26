@@ -106,7 +106,7 @@ void main(void) {
 
         if (ONLINE == FALSE) {
 
-            print("\223\237\016\022VIC\222\005BBS           \237V1.03\005\n");
+            print("\223\237\016\022VIC\222\005BBS           \237V1.04\005\n");
             print("Last : ");
             print(S.LASTCALLER);
             print("\n");

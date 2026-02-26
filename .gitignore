@@ -7,6 +7,7 @@
 *.d64
 *.g64
 *.t64
+*.dhd
 *.p00
 
 # Assembler / compiler intermediates

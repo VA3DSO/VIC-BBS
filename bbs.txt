@@ -1,0 +1,619 @@
+ONLINE GAME IDEAS:
+------------------
+- Beach Watcher
+- War!
+- Alien Attack
+- Raid On Fort Knox?
+- Omega Race?
+- Astro Trivia
+- Leather Goddesses of Phobos
+
+WAR!
+----
+spades   =  97 \141
+hearts   = 115 \163
+clubs    = 120 \170
+diamonds = 122 \172
+
+red      =  28 \034
+white    =   5 \005
+
+
+XMODEM:
+-------
+
+Uploading:
+r67 6 times (part of XMODEM-CRC... ignore)
+
+r 21 (rec from remote - BEGIN!)
+
+I should now send 1 (SOH), plus block # and block # check
+  followed by 128 byte packet, and then checksum
+  NOTE: I didn't see my packets going out in the debug
+
+  r6 (rec from remote - presumably my packet was good)
+
+  + (where is the data?)
+
+s4 (EOT - I send this to remote... makes sense)
+
+r21 (rec NAK from remote?)
+
+s4 (send EOT again?)
+
+r6 (rec ACK from remote)
+
+presumably I should send a final ACK?
+
+DOWNLOAD LOGIC:
+- get and store file name
+- open file and check for errors
+- send NAK[21]
+- look for SOH[1]
+- if EOT[4] instead, then wrap things up (end ACK[6] and close file)
+- look for BLK# and CHK# - send NAK[21] if not what is expected (have to clear the input buffer first)
+- look for 128 bytes and calculate CHECKSUM
+- look for CHKSUM and compare to what is calculated - if no match, send NAK[21] and look for resend
+- if match, then send ACK[6] and go back to SOH
+- at anytime we could get CAN[24] to cancel/abort (in place of SOH)
+- allow user to hit a key (perhaps CTRL+X) to send CAN[24]
+- clear buffer idea: GETIN from RS232 until we get nulls for 10 seconds straight?
+
+CHARS:
+SOH = CHR$(1)           START OF HEADER
+EOT = CHR$(4)           END OF TRANSMISSION
+ACK = CHR$(6)           ACKNOWLEDGED
+NAK = CHR$(21)          NEGATIVE ACK
+CAN = CHR$(24)          CANCEL
+PAD = CHR$(26)          PADDING
+
+XMODEM PROTOCOL:
+Snd: NAK
+Rec: SOH
+Rec: BL#
+Rec: CHK
+Rec: 128 bytes in packet
+Rec: CHK
+Snd: ACK if OK
+Snd: NAK if RETRY
+Rec: EOT
+Snd: ACK to END
+
+DOWNLOAD KEY:
+S: SOH (green=ACK, red=NAK)
+B: BL# (green=ACK, red=NAK)
+C: CHK (red=NAK block checksum)
+X: NAK (red=NAK packet checksum)
+?: ??? (red=unexpected char received)
+!: CAN (red=TOO MANY RETRIES)
++: byte receieved
+
+UPLOAD KEY:
+W: WAIT (green=WAITING)
+?: UNKNOWN (red=SOH not received - some other char?)
+N: NAK (yellow=RETRY)
+X: CHK (red=BAD CHECKSUM)
+S: SOH (green=SENT SOH)
+!: CAN (red=TOO MANY RETRIES)
+↑: byte read from disc
++: byte sent
+
+RETRY CHARS: (load # into XR)
+01 : red capital S = didn't get SOH or EOT
+02 : red captial B = block count mismatch
+03 : red captial C = block checksum error
+04 : red captial X = checksum error
+05 : red capital N = no NAK
+-- : red ! = too many retries, ABORT!
+-- : yellow ! = timeout in GETCHAR
+-- : white + = data byte transferred
+
+STATUS CHARS: (load color into AC, char into YR)
+green capital S = we got SOH!
+green capital B = we got BLOCK#!
+
+CHARS:
+#$3F = ? (Unknown)
+#$53 = S (Start of Header)
+#$42 = B (Block)
+#$43 = C (Checksum)
+#$58 = X (Timeout)
+#$45 = E (End of Transfer)
+#$4E = N (Negative ACK)
+#$57 = W (Waiting for NAK)
+#$BA =   (Checkmark)
+
+COLORS:
+#$1C = RED
+#$1E = GREEN
+#$9E = YELLOW
+
+DOWNLOAD LOGIC:
+- get and store file name
+- open file and check for errors
+- send NAK[21]
+- look for SOH[1]
+- if EOT[4] instead, then wrap things up (end ACK[6] and close file)
+- look for BLK# and CHK# - send NAK[21] if not what is expected (have to clear the input buffer first)
+- look for 128 bytes and calculate CHECKSUM
+- look for CHKSUM and compare to what is calculated - if no match, send NAK[21] and look for resend
+- if match, then send ACK[6] and go back to SOH
+- at anytime we could get CAN[24] to cancel/abort (in place of SOH)
+- allow user to hit a key (perhaps CTRL+X) to send CAN[24]
+- clear buffer idea: GETIN from RS232 until we get nulls for 10 seconds straight?
+
+UPLOAD LOGIC:
+- get and store file name
+- open file and check for errors
+- send a NAK[21]
+-
+
+
+RECEIVING CHAR[0]:
+Normally we call $FFE4 and compare the AC to #$00 and
+if it is zero, we got back. But sometimes we need to
+receive a char[0]. To do this we:
+
+Save the state of $029C (668) which is the RS232 input buffer counter
+JSR $FFE4
+has $029C changed? If so, we have a char in AC
+if not, loop back
+Worked in BASIC...
+
+
+
+BUGS:
+-----
+- add colour to the screens:
+  - banner (use existing a bit modified)
+  - MOTD - use same as Main Menu
+  - Main:  Cyan   \237
+  - Mesg:  Yellow \236
+  - Bull:  Green  \036
+  - File:  Red    \034
+  - Game:  Purple \234
+  - Sysop: White  \005
+
+COLORS:
+005 = char[5]   = white
+034 = char[28]  = red
+036 = char[30]  = green
+037 = char[31]  = blue
+220 = char[144] = black
+234 = char[156] = purple
+236 = char[158] = yellow
+237 = char[159] = cyan
+
+137 = char[95]  = back arrow (for CD commands)
+272 = char[186] = check mark
+
+FILE CHECK:
+-----------
+open 15,8,15,"r:{filename}={filename}":close15
+error 62 = FILE NOT FOUND
+error 63 = FILE EXISTS
+
+MODULE USAGE:
+-------------
+COMMON -> UUTILS
+  newuser -> move to module to share with BBS and SYSOP?
+  finduser
+  genuserlist
+  changepassword
+  edituser
+  nextid
+
+  lprint -> even used anymore?
+
+EDITOR -> FUTILS
+  directory -> used by EDITOR, SYSOP(?) and FILES
+
+
+WORK TO DO:
+-----------
+- The Wall [DONE!]
+- A Game?
+- Files?
+
+FUNCTION KEYS:
+--------------
+F1 = 133  F2 = 137
+F3 = 134  F4 = 138
+F5 = 135  F6 = 139
+F7 = 136  F8 = 140
+
+SEQ FILE LIST:
+--------------
+banner
+motd
+userlog - generated by genuserlist() function
+menu0
+menu1
+menu2
+menu3
+menu4
+menu5
+menu6
+info
+bulletins
+the wall
+newuser1
+newuser2
+gamelist
+war_intro
+war_inst
+sysopmenu
+
+ZERO PAGE:
+==========
+251 $FB = LOCALMODE
+252 $FC = U.ID
+253 $FD = MODULE
+
+UPPER MEMORY:
+=============
+40960 - 41215 ($A000 - $A0FF) - BOOTSTRAP
+41216 ($A100) - hi byte of message number
+41217 ($A101) - lo byte of message number
+
+AREAS TO FIX:
+-------------
+- add File Upload/Downloads
+- fix Chat feature [DONE!]
+- fix Editor feature [DONE!]
+
+EDITOR BUGS:
+------------
+ *   can't delete a blank line (chr13 only)
+ *   backspace goes too far if ctrl char in string [FIXED]
+ *   backspace doesn't give back chars! [FIXED]
+ *   edit doesn't seem to work anymore
+
+
+NEW FEATURES:
+-------------
+- last caller [DONE!]
+- the Wall
+- online games? (ie: beach hunter, war, CHL hockey!)
+
+FILE EDITOR:
+------------
+START = A000 (40960)
+END   = BFFF (49151)
+
+N - NEW FILE (just create blank file, then call Edit)
+E - EDIT FILE
+
+Prompt for filename and drive
+try to open the file
+if disk error, ask if we wanna create it?
+otherwise, load 'er up and let 'er rip!
+
+NON-PRINTING-CHARS:
+-------------------
+000 - 031 > non printing
+032 - 127 > printing
+128 - 160 > non printing
+161 - 254 > printing
+
+INIT STRING:
+------------
+e0q1s0=1s2=255s30=30&k0
+
+654321
+
+MENU (MASTER)
+   xxxxxxxxxx|xxxxxxxxxx
+✓1 Bulletins  Read Msgs  2✓
+✓2 The Wall   Post Msg   3✓
+✓3 Games      Chat       1✓
+
+✓1 $File Dir  Download   3✓
+✓2 File Desc  Upload     3✓
+
+✓1 Info       View Users 1✓
+✓1 Set Pswd   Time Left  1✓
+✓1 LogOff     Help (?)   1✓
+
+SYSOP MENU:
+-----------
+   xxxxxxxxxx|xxxxxxxxxx
+✓5 Add User   Edit User  5✓
+✓5 Gen Users  File Edit  5✓
+ 5 Backup     Restore    5
+✓5 Stats      Create UL  6
+
+✓1 EXit       Help (?)   1✓
+
+USER RECORD:
+------------
+         1111111111222222222233333333334444444444555555555566666666667777777
+1234567890123456789012345678901234567890123456789012345678901234567890123456
++--------+---------+---------+---------+---------+---------+---------+------
+USERNAME____PASSWORD__REALNAME____________FROM___________SCALLSLREADmmddyy~~
+
+* - minus 1 for C array!!!
+
+01 - 12: USERNAME[12]
+13 - 22: PASWORD[10]
+23 - 42: REALNAME[20]
+43 - 57: FROM[15]
+58 - 58: SECURITY[1]
+59 - 63: CALLS[5]
+64 - 68: LASTREAD[5]
+69 - 70: DD
+71 - 72: MM
+73 - 74: YY
+75 - 75: \n
+76 - 76: \0
+
+typedef struct {
+    char ID[4];
+    char USERNAME[13];
+    char PASSWORD[11];
+    char REALNAME[21];
+    char FROM[16];
+    int SECURITY;
+    int CALLS;
+    int LASTREAD;
+    char LASTLOGON[9];
+    long TU;
+}  USER;
+
+typedef struct {
+    char LASTCALLER[13];
+    int NUMCALLS;
+    int NUMUSERS;
+    int NUMMESGS;
+    int NUMBULLS;
+} SYSTEM;
+
+input() function:
+-----------------
+input(char fmt, int min, int max, char editmode);
+where:
+- fmt = format char: 'A' - alpha num, 'I' - int, 'Z' - anything
+- min/max = length... 40 chars MAX!!!
+= editmode = FALSE normal, TRUE overwrite whatever is in I
+- data will be saved to I[] char array... terminated with \0.
+
+ie: input('A', 0, 20, FALSE);
+
+
+STRING FUNCTIONS:
+-----------------
+itoa(num, str, 10);             /* converts integer to string */
+i = atoi(str);                  /* converts string to integer */
+c = strcmp(str1, str2);         /* 0 = match! */
+strcat(str1, str2);             /* appends str2 to str1 */
+strcpy(str1, str2);             /* copies str2 to str1 */
+strupper(str);			        /* converts str to UPPER CASE */
+ch = toupper(ch);               /* converts char to UPPER CASE */
+
+REPLACE itoa with sprintf:
+--------------------------
+itoa(num, str, 10) becomes sprintf(str, "%i", num);
+
+MODEM BUFFER:
+-------------
+- note value in 668
+- call getin from RS232
+- compare with 667
+- if no change, buffer is empty
+- if change, we got a char!
+
+
+CC65 NOTES:
+-----------
+__A__ -> Accumulator
+
+__asm__ ("xxxx"); assembler commands
+
+share variables with registers:
+
+static char XR, YR;
+
+XR = value;
+__asm__ ("ldx %v", XR); load value into XR
+
+__asm__ ("stx %v", XR); store value from XR
+value = XR;
+
+to set line number to 0 instead of 800...
+- load program
+- enter monitor
+- f 1200 1204 00 0b 12 00 00
+- exit monitor (x)
+- save program
+
+CBM.H HEADER:
+-------------
+
++--------------+---------+---------+--------------------------+-------------------------------------------+
+| CBM.H FUNC   | KERNAL  | ADDRESS | COMMENT                  | EXAMPLE                                   |
++--------------+---------+---------+--------------------------+-------------------------------------------+
+| cbm_k_basin  | CHRIN   | $FFCF   | input char from channel  | ch = cbm_k_basin()  // cbm_k_chkin first! |
+| cbm_k_bsout  | CHROUT  | $FFD2   | output char to channel   | cbm_k_bsout(ch)     // cbm_k_ckout first! |
+| cbm_k_chkin  | CHKIN   | $FFC6   | open channel for input   | cbm_k_chkin(#)                            |
+| cbm_k_ckout  | CHKOUT  | $FFC9   | open channel for output  | cbm_k_ckout(#)                            |
+| cbm_k_close  | CLOSE   | $FFC3   | close logical file       | cbm_k_close(#)                            |
+| cbm_k_clrch  | CLRCHN  | $FFCC   | reset/close i/o channels | cbm_k_clrch()                            |
+| cbm_k_getin  | GETIN   | $FFE4   | get char from chanel     | ch = cbm_k_getin()                        |
+| cbm_k_open   | OPEN    | $FFC0   | open logical file        |                                           |
+| cbm_k_setlfs | SETLFS  | $FFBA   | set logical addresses    |                                           |
+| cbm_k_setnam | SETNAM  | $FFBD   | set logical file name    |                                           |
+| cbm_open     | --      | --      | BASIC open               | cbm_open(2,8,2,"filename,s,r")            |
+| cbm_close    | --      | --      | BASIC close              | cbm_close(2)                              |
+| cbm_read     | --      | --      | BASIC input#             | cbm_read(chan, var, len)                  |
+| cbm_write    | --      | --      | BASIC print#             | cbm_write(chan, var, len) // hint: strlen!|
++--------------+---------+---------+--------------------------+-------------------------------------------+
+
+COLOUR AREAS:
+-------------
+Main: Yellow
+Messages: Cyan
+Bulletins: Green
+Files: Red
+Games: Purple
+Sysop: Blue
+
+PRINT CONTROL CHARS:
+--------------------
+
+For whatev reason, they use Octets. Weird, right?
+ie:
+
+print("\022      VIC-BBS      \222");
+
+COLORS:
+005 = char[5]   = white
+034 = char[28]  = red
+036 = char[30]  = green
+037 = char[31]  = blue
+220 = char[144] = black
+234 = char[156] = purple
+236 = char[158] = yellow
+237 = char[159] = cyan
+
+022 = char[18]  = rvs on
+222 = char[146] = rvs off
+
+016 = char[14]  = switch to lower case
+010 = char[8]   = disables shift+C=
+
+015 = char[13]  = return
+
+021 = char[17]  = cursor down
+221 = char[145] = cursor up
+235 = char[157] = cursor left
+035 = char[29]  = cursor right
+
+223 = char[147] = clear screen
+
+300 = char[192] = a dash - but graphical
+
+PRINTF FORMATS:
+---------------
+%c character value
+%s string of characters
+%d signed integer
+%i signed integer
+%f floating point value
+%e scientific notation, with a lowercase “e”
+%E scientific notation, with a uppercase “E”
+%g use %e or %f
+%G use %E or %f
+%o octal
+%u unsigned integer
+%x unsigned hexadecimal, with lowercase letters
+%X unsigned hexadecimal, with uppercase letters
+%p a pointer
+%n the argument shall be a pointer to an integer in which the number of characters written is placed
+%% shall be a % sign
+
+
+KEY MEMORY LOCATIONS:
+=====================
+$0090 - Status Word ST
+$0286 - Current color code
+$028A - Keyboard repeat flag 0=off, 128=on
+$0297 - RS-232 Status Register
+
+#define S1 0x900A           /* 36874 - oscillator 1 (low) */
+#define S2 0x900B           /* 36875 - oscillator 2 (med) */
+#define S3 0x900C           /* 36876 - oscillator 3 (high) */
+#define SN 0x900D           /* 36877 - noise generator */
+#define SV 0x900E           /* 36878 - speaker volume (1-15) */
+#define SC 0x900F           /* 36879 - screen border */
+#define RS 0x9110           /* 37136 - RS-232 register */
+
+
+ALLOWED CHARACTERS:
+===================
+05 = white
+0D = RETURN (not included in rules, as this is implied already)
+12 = RVS ON
+14 = DEL
+1C = RED
+1E = GRN
+1F = BLU
+20 -> 7F (OK)
+90 = BLK
+92 = RVS OFF
+9C = PUR
+9E = YEL
+9F = CYN
+A1 -> FE (OK)
+
+
+DOORS:
+------
+A100+ is where we can transfer our data
+EXCEPT:
+252 (FC) - contains U.ID of user (cleared after each jump)
+253 (FD) - contains module to load (set to zero after jump)
+
+BASIC ROUTINES:
+---------------
+   0 - INIT
+  10 - MAIN LOOP
+ 100 - WAIT FOR CALL
+ 200 - LOGON
+ 289 - SHOW USER STATS
+ 300 - NEW USER (goes to 1300 for details)
+ 400 - MAIN I/O
+ 440 - WORD WRAP
+ 500 - GET USER RECORD
+ 600 - LOGOFF
+ 700 - PAUSE
+ 750 - BEEP
+ 800 - PRINTLINE (replaced by ML)
+ 900 - DEBUG (> command)
+1000 - BANNER
+1100 - USER LIST
+1200 - MOTD
+1300 - NEW USER APPLICATION
+1400 - HANG UP
+1500 - DEL CHAR FROM INPUT (I$)
+1600 - TOUPPER
+1700 - SHOW TIME
+1800 - PRESS ANY KEY
+1850 - ARE YOU SURE?
+1900 - FIND NEXT USER ID
+2000 - MAIN MENU
+3000 - LOAD STATS
+3100 - SAVE STATS
+3200 - VALIDATE USER LOGIN (check password)
+3300 - LOAD ML
+3400 - GET DATE FROM RTC
+3450 - GET TIME FROM RTC
+3490 - RTC CONVERT
+3500 - UPDATE USER RECORD
+3600 - SET SYSOP STATUS
+4000 - BULLETINS
+4100 - READ MESSAGES
+4200 - POST A MESSAGE
+4300 - LIST FILES
+4400 - DOWNLOAD A FILE
+4500 - UPLOAD A FILE
+4600 - SYSTEM INFO
+4700 - USER SETTINGS (preferences)
+4800 - CHAT
+4900 - CHANGE PASSWORD
+5000 - PETSCII EDITOR
+5100 - POKE O$ INTO HIGH RAM
+5200 - EDITOR COMMANDS
+5300 - EDIT LINE
+5400 - LIST MESSAGE (with line numbers)
+5500 - PREVIEW MESSAGE
+5600 - TOGGLE WORD WRAP
+5700 - DELETE A LINE
+5800 - EDITOR HELP
+6000 - SYSOP MENU (not complete)
+6100 - SYSOP HELP
+6200 - EDIT FILE (not working)
+
+SCRATCHPAD:
+-----------
+
+s

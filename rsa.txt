@@ -1,0 +1,333 @@
+MEMORY REVAMP:
+
+LOW RAM:  $0400-$0FFF (1024-4095)   (3071 bytes)
+- Room Map (289 bytes)
+- Item List (174 bytes)
+- A Abreviations  (150 bytes)   [ 30 x  5 byte strings]
+- B Short Strings (2452 bytes)  [153 x 16 byte strings]
+
+HIGH RAM: $A000-$BFFF (40960-49152) (8K)
+- C Medium Strings (4096 bytes) [128 x 32 byte strings]
+- D Long Strings   (4096 bytes) [ 64 x 64 byte strings]
+
+Game Map:
+Starting at $0400
+
+typedef struct {
+    char description[2];                    // char[0] = A/B/C/D (string len), char[1] = string number
+    char abbrev;                            // pointer to Abbreviation string
+    char type;                              // IMMOVABLE / MOVABLE / DONTSHOW
+    char room;                              // pointer to room where item is (255 if taken)
+    char direction;                         // NORTH / SOUTH / EAST / WEST
+} Item;
+// Item Size = 6 bytes
+
+typedef struct {
+    char name[2];                           // char[0] = A/B/C/D (string len), char[1] = string number
+    char locked;                            // TRUE / FALSE
+    char description[2];                    // char[0] = A/B/C/D (string len), char[1] = string number
+    char doors[4];                          // pointer to other room or 255 for no exit
+    char dirdesc[4][2];                     // N/S/E/W description
+} Room;
+// Room Size = 17 bytes
+
+17 Rooms = 17 x 17 = 289 bytes
+30 Items = 30 x  6 = 180 bytes
+                     ---------
+                     469 bytes
+
+Leaving 2602 bytes in lower RAM
+= 30  Abreviations (5 byte) strings
+= 153 Short (16 byte) strings
+
+
+
+
+-------------------------------------------------------------------------------
+
+KEYS TO THE GAME:
+- take mirror to protect from Drone attacks (only works for 3 shots)
+- run (don't go) or Drones will get you! (if you go, drones fire faster - easier to lock onto you)
+- get keys from Storage Closet
+- visit MedBay and get flashlight and medkit
+- visit Barracks and get terminal password
+- visit Server Room and use terminal to disable Drones
+- visit Storage Closet to get wire cutters
+- visit Quartermaster to get kevlar vest
+- visit either Lab or Mess Hall to take drink from sink
+- DO NOT EAT any food in Mess Hall! All contaminated
+- visit Lab to get access card
+- visit elevator and use access card to get to yard
+- go to the fence and cut your way out!
+- note: you need kevlar vest and medkit to successfully esacpe
+
+NEXT STEPS:
+- Keys WORK
+- Flashlight WORKS
+- Terminal WORKS
+- PATCH: Elevator works with Access Card, not keys [DONE!]
+- PATCH: Drones need to fire faster if not running
+- PATCH: Make mirror work
+- PATCH: Track hydration
+- PATCH: Food = Bad Time
+- PATCH: Medkit in Yard
+- PATCH: Kevlar in Yard
+- PATCH: Wire Cutters to escape!
+- WIN: Summarize win, reunite with other survivors, leave hint about sequel!
+- END1: Missing Kevlar Vest - shot dead in yard.
+- END2: Have Kevlar but missing Medkit - escape but die shortly thereafter.
+- END3: Have Kevlar, Medkit and ate food - escape but die shortly thereafter.
+- END4:
+
+--- RED SECTOR A ---
+* = takable item
+~ = usable item
++------------------+------------------+------------------+----------------------+             +----------------XX-------------+
+| 0.cryo chamber   | 3.lab            | 6.mess hall      | 9.barracks (FLSHLT)  |             |         14.fence              |
+| (E: *mirror)     | (E: *microscope) | (E: *cookies)    | (E: *boots)          |             |                               |
+| (W: *poster)     | (W: shelves)     | (W: ~sink)       | (W: lockers)         |             |                               |
+| (N: ~cryobeds)   | (N: *card)       | (N: *food tray)  | (N: password)        |             |                             1 |
+| door UNLOCKED    | door LOCKED      | door UNLOCKED    | door UNLOCKED        |             |                             5 |
++------  ----------+-----------XX-----+---------  -------+---------  -----------+-------------+                             . |
+|                  |                  |                  |                      | 12.elevator | 13.yard                     f |
+W 1.hallway          4.hallway          7.hallway          10.hallway           A (to yard)   A (has barbwire fence)        e X
+|                  |                  |                  |                      | door OPEN   | need WIRECUTTERS            n X
++------XX----------+---------XX-------+---------  -------+----------  ----------+-------------+ need KEVLAR                 c |
+| 2.server room    | 5.medbay         | 8.storage room   | 11.quartermaster     |             | need WATER                  e |
+| (E: *marker)     | (E: *medkit)     | (E: *keys)       | (E: *helmet)         |             |                               |
+| (W: ~terminal)   | (W: *flashlight) | (W: *bucket)       (W: *clipboard)      |             |                               |
+| (S: *cables)     | (S: *scalpel)    | (S: *cutters)    | (S: *kevlar vest)    |             |                               |
+| door LOCKED      | door LOCKED      | door UNLOCKED    | door UNLOCKED        |             |         16.fence              |
++------------------+------------------+------------------+----------------------+             +----------------XX-------------+
+
+     N
+     |
+   W-+-E
+     |
+     S
+
+
+STRING CHECKER:                                               |
+xxxxxxxxxxxxxxxxxxxxx|xxxxxxxxxxxxxxxxxxxxx|xxxxxxxxxxxxxxxxxxxxx
+
+
+ITEMS:
+------
+
+cryo chamber:
+0. mirror
+1. poster
+2. cryobeds
+
+server room:
+3. marker
+4. terminal
+5. cables
+
+lab:
+6. microscope
+7. access card
+
+medbay:
+8. medkit
+9. flashlight
+10. scalpel
+
+mess hall:
+11. cookies
+12. sink
+13. food tray
+
+storage room:
+14. keys
+15. bucket
+16. wire cutters
+
+barracks:
+17. boots
+
+quartermaster
+18. helmet
+19. clipboard
+20. kevlar vest
+
+typedef struct {
+    char *name;
+    int taken;
+} Item;
+
+typedef struct {
+    char *name;
+    char *description;
+    int north, south, east, west; // room indices (-1 if no exit, 0 if locked, 1 if open)
+    int itemIndex[4];             // index of item in room (-1 if none, otherwise item number)
+} Room;
+
+COMMANDS:
+- go/run (north, south, east, west)
+- take/drop/use {item}
+- look
+- inventory
+- help
+
+STEPS:
+- implement help command
+- build room structure
+- allow to navigate through map with "go" commands
+- implement "look" command
+- figure out take/drop
+- implement inventory
+- implement use command
+
+WALK THROUGH:
+- wake in Cryo Chamber
+- take mirror                                                             [1 item]
+- go south (into hallway)
+- run east (to lab/medbay - both locked)
+- run east (to mess hall/storage room)
+- use mirror (to deflect drone fire)
+- go north (into mess hall)
+- use sink (to drink water - DON'T eat any food!)
+- go south (into hallway)
+- go south (into storage room)
+- take keys                                                               [2 items]
+- go north (into hallway)
+- run west (to lab/medbay)
+- use mirror (to deflect drone fire)
+- go south (into medbay)
+- take medkit                                                             [3 items]
+- take flashlight                                                         [4 items]
+- use sink (to drink water)
+- go north (into hallway)
+- run east (to mess hall/storage room)
+- run east (to barracks/quartermaster)
+- use mirror (to deflect drone fire)
+- go north (into barracks)
+- use flashlight (shows stuff including code written on wall)
+- go south (into hallway)
+- run west (to mess hall/storage room)
+- run west (to lab/medbay)
+- use mirror (to deflect drone fire - it breaks this time)                [3 items]
+- run west (to cryo / server room)
+- go south (into server room)
+- use terminal (type in password)
+- disables the drones!
+- go north (into hallway)
+- go east (to lab/medbay)
+- go north (into lab)
+- take access card                                                        [4 items]
+- use sink (to drink water)
+- go south (into hallway)
+- go east (to mess hall/storage room)
+- go south (into storage room)
+- drop keys                                                               [3 items]
+- take wire cutters                                                       [4 items]
+- go north (into hallway)
+- go east (to barracks / quartermaster)
+- go south (into quatermaster)
+- take kevlar vest                                                        [5 items]
+- go north (into hallway)
+- go east (into elevator)
+- use access card
+- use kevlar vest
+- go east (into yard)
+- get shot at
+- use medkit
+- go north/south/east (to barbwire fence)
+- use wirecutters (FREEDOM!)
+
+ROOMS:
+- Cryo Chamber
+  - Mirror
+  - ???
+- Hallway
+  - Drones
+- Lab
+  - Access Card
+  - Microscope
+  - Sink
+  - Beakers
+- Server Room
+  - Computer Terminals
+  - Backup Tapes
+  - Network Cables
+- Barracks
+  - Pillows
+  - Blankets
+  - Marking on Wall
+    - Password
+  - Razor
+- MedBay
+  - Med Kit
+  - Scalpel
+  - Flashlight
+- Storage Room
+  - Master Keys
+  - Wire Cutters (on second visit)
+- Elevator
+  - Needs Access Card
+- Yard
+  - Needs Wire Cutters
+  - Needs Kevlar Vest
+  - Need to have drank Water
+- Window at end of hallway
+  - View Dystopian Scene
+- Mess Hall
+  - Sink
+  - Cookies
+  - Hot Dogs
+  - Sugar
+- Quartermaster
+  - Kevlar Vest
+  - Helmet
+  - Boots
+  - Gloves
+
+ITEMS: (20 MAX)
+- Mirror (for deflecting Drone shots)
+- Access Card (for Elevator)
+- Master Keys (to unlock doors)
+- Flashlight (for seeing Term Pswd in Barracks)
+- Terminal Password (found via LOOK - needed in Server Room)
+- Microscope
+- Lab Sink
+- Beakers
+- Computer Terminal
+- Backup Tapes
+- Network Cables
+- Pillows
+- Blankets
+- Marking on Wall
+  - Password
+- Razor
+- Med Kit
+- Scalpel
+- Wire Cutters
+- Mess Hall Sink
+- Cookies
+- Hot Dogs
+- Sugar
+- Kevlar Vest
+- Helmet
+- Boots
+- Gloves
+
+Premise: You awaken in Red Sector A, a bleak prison camp orbiting a
+dying planet. The guards are gone. The gates are ajar. Something
+happened — but you don’t know what. Your goal: escape the facility,
+uncover the truth, and survive.
+
+Lyric-Inspired Elements
+
+“Ragged lines of ragged grey / Skeletons, they shuffle away” → Hallways lined with empty bunks and discarded uniforms. Survivors may still lurk—or worse.
+
+“Shouting guards and smoking guns / Will cut down the unlucky ones” → Security drones still patrol. Some are malfunctioning. Others are lethal.
+
+“I clutch the wire fence until my fingers bleed” → A perimeter fence blocks the final exit. You’ll need tools—or sacrifice.
+
+“Sickness to insanity / Prayer to profanity” → The medbay is trashed. Logs hint at a virus outbreak. Some inmates turned feral.
+
+“I hear the sound of gunfire at the prison gate” → Was there a liberation attempt? Or a massacre? The truth lies in the command center.
+
+“Are we the last ones left alive?” → You’ll encounter NPCs—some helpful, some broken. Their stories deepen the mystery.
+

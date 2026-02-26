@@ -1,0 +1,16 @@
+del bbs
+del games
+del editor
+del files
+del rsa
+del sysop
+del "rsa builder"
+write bbs.prg bbs
+write games.prg games
+write editor.prg editor
+write files.prg files
+write rsa.prg rsa
+write sysop.prg sysop
+write rsab.prg "rsa builder"
+quit
+

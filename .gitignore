@@ -38,6 +38,7 @@ desktop.ini
 *.tmp
 *.swp
 *.swo
+~$*.xlsm
 
 # --- Worker Files ---
 ASCII Notes.txt

@@ -457,11 +457,13 @@ void deleteuser(char id) {
         U.ID = id;
         loaduser(U.ID);
 
+        sprintf(O, "      ID:%i\n", U.ID); print(O);
         sprintf(O, "USERNAME:%s\n", U.USERNAME); print(O);
         sprintf(O, "PASSWORD:%s\n", U.PASSWORD); print(O);
         sprintf(O, "REALNAME:%s\n", U.REALNAME); print(O);
         sprintf(O, "    FROM:%s\n", U.FROM); print(O);
         sprintf(O, "SECURITY:%i\n", U.SECURITY); print(O);
+        sprintf(O, "   CALLS:%i\n", U.CALLS); print(O);
         sprintf(O, "LST CALL:%s\n\n", U.LASTLOGON); print(O);
 
         yn = confirm();
@@ -495,14 +497,11 @@ void deleteuser(char id) {
             cbm_close(1);
             cbm_close(15);
 
-            genuserlist();
-
-            loaduser(sid);
-
-            print("\nDELETED.\n");
+            print("\nDELETED. REGEN?\n");
 
         }
 
+        loaduser(sid);
 
     } else {
         print("\n\nYOU CAN'T DO THAT!\n\n");
@@ -512,11 +511,14 @@ void deleteuser(char id) {
 
 void validateusers(void) {
 
-    char id, rec[76], user[13], numcalls[6], lastcall[5], ch = 0;
+    char sid, id, rec[76], user[7], numcalls[6], lastcall[5], ch = 0;
     int c = 0;
 
-    print("\n\nUser Validation:\n\n");
-    print("\022USERNAME    \222 \022CLS\222 \022LAST\222\n");
+    sid = U.ID;
+
+    print("\223\005\022USER\222VALIDATION\n");
+
+    print("\n\022ID \222 \022USER  \222 \022CALLS\222 \022LAST\222\n");
 
     if (open_userfile() == 0) {
 
@@ -527,43 +529,59 @@ void validateusers(void) {
                 clear(rec);
                 cbm_read(1, rec, 76);
 
-                if (rec[0] != 255) {
+                strncpy(user, rec, 6);
+                user[6] = '\0';
 
-                    strncpy(user, rec, 12);
-                    user[12] = '\0';
+                strncpy(numcalls, rec + 58, 5);
+                numcalls[5] = '\0';
+                trim(numcalls);
 
-                    strncpy(numcalls, rec + 58, 5);
-                    numcalls[5] = '\0';
-                    trim(numcalls);
+                lastcall[0] = rec[68];
+                lastcall[1] = rec[69];
+                lastcall[2] = rec[72];
+                lastcall[3] = rec[73];
+                lastcall[4] = '\0';
 
-                    lastcall[0] = rec[68];
-                    lastcall[1] = rec[69];
-                    lastcall[2] = rec[72];
-                    lastcall[3] = rec[73];
+                if (lastcall[0] == '2') {
+                    /* date is in old format */
+                    lastcall[0] = rec[70];
+                    lastcall[1] = rec[71];
+                    lastcall[2] = rec[68];
+                    lastcall[3] = rec[69];
                     lastcall[4] = '\0';
+                }
 
-                    clear(O);
-                    sprintf(O, "%12s %-3s %s\n", user, numcalls, lastcall); print(O);
+                sprintf(O, "%3i %6s %5s %4s\n", id, user, numcalls, lastcall); print(O);
 
-                    c++;
-                    if (c >= 21) {
-                        ch = pause(TRUE);
-                        if (ch == 'Q') {
-                            id = 255;
-                            break;
-                        }
+                c++;
+
+                if (c > 20) {
+
+                    print("Continue (Y/N)?");
+
+                    ch = get_command();
+
+                    if (ch != 'Y') {
+                        id = 255;
+                        break;
+                    } else {
+                        print("\n\022ID \222 \022USER  \222 \022CALLS\222 \022LAST\222\n");
                         c = 0;
                     }
-
                 }
+
             }
+
         }
 
-        pause(FALSE);
     }
 
     close_userfile();
 
+    loaduser(sid);
+
+    print("\nEND OF LINE.\n");
+    pause(FALSE);
 
 }
 

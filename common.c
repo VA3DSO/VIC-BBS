@@ -1182,6 +1182,7 @@ void input(char fmt, int min, int max, char editmode) {
                 ch = I[i-1];
                 I[i] = '\0';
                 i--;
+                I[i] = '\0';
                 hc = hc - hardchar(ch);
                 if (hardchar(ch) == 1) {
                     putch(20);

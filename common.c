@@ -381,10 +381,10 @@ void savestats() {
 
 void saveuser(char id) {
 
-    char rec[76], e;
+    char rec[USER_RECLEN], e;
     int i;
 
-    for (i=0; i<76; i++) {
+    for (i=0; i<USER_RECLEN; i++) {
         rec[i] = 32;
     }
 
@@ -434,7 +434,7 @@ void saveuser(char id) {
                 rec[74] = 13;
                 rec[75] = 0;
 
-                cbm_write(1, rec, 76);
+                cbm_write(1, rec, USER_RECLEN);
                 e = errorcheck();
                 e = gotouser(id);
 
@@ -560,7 +560,7 @@ char open_userfile() {
 
     char e, err[3];
     char filename[9] = "users,l,x";
-    filename[8] = 76;
+    filename[8] = USER_RECLEN;
 
     cbm_open(15,8,15,"");
 
@@ -602,14 +602,14 @@ char gotouser(char id) {
 
 char loaduser(char id) {
 
-    char rec[76], e = 0;
+    char rec[USER_RECLEN], e = 0;
 
     clear(rec);
     memset(&U, 0, sizeof(U));
 
     if (open_userfile() == 0) {
         if (gotouser(id) == 0) {
-            cbm_read(1, rec, 76);
+            cbm_read(1, rec, USER_RECLEN);
             e = errorcheck();
         }
 
@@ -617,7 +617,7 @@ char loaduser(char id) {
 
     close_userfile();
 
-    if (strlen(rec) == 75) {
+    if (strlen(rec) == USER_RECLEN - 1) {
 
         U.ID = id;
 
@@ -646,7 +646,7 @@ char loaduser(char id) {
         U.LASTREAD = atoi(O);
 
         if (U.LASTREAD < S.NUMMESGS - 255) {
-            U.LASTREAD = S.NUMMESGS;
+            U.LASTREAD = S.NUMMESGS - 255;
         }
 
         if (U.LASTREAD > S.NUMMESGS) {

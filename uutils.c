@@ -65,7 +65,13 @@ void newuser() {
                     U.ID = id;
                     U.SECURITY = 3;
                     U.CALLS = 1;
-                    U.LASTREAD = 0;
+                    if (S.NUMMESGS > 255) {
+                        if (U.LASTREAD < S.NUMMESGS - 255) {
+                            U.LASTREAD = S.NUMMESGS - 255;
+                        }
+                    } else {
+                        U.LASTREAD = 1;
+                    }
 
                     getdate();
                     strcpy(U.LASTLOGON, DATE);

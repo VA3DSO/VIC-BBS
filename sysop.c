@@ -225,7 +225,7 @@ void fix_stats() {
 
 void backup() {
 
-    char drive, rec[76], id, e;
+    char drive, rec[USER_RECLEN], id, e;
 
     print("\223\005\022USER\222BACKUP\n\n");
     print("Drive to use (8-10)?\n>");
@@ -251,10 +251,10 @@ void backup() {
                     if (gotouser(id) == 0) {
 
                         clear(rec);
-                        cbm_read(1, rec, 76);
+                        cbm_read(1, rec, USER_RECLEN);
 
                         if (errorcheck() == 0) {
-                            cbm_write(3, rec, strlen(rec));
+                            cbm_write(3, rec, USER_RECLEN);
                             e = errorcheck();
                         }
                     }
@@ -279,7 +279,7 @@ void backup() {
 
 void restore() {
 
-    char drive, rec[76], id, yn, uc, e;
+    char drive, rec[USER_RECLEN], id, yn, uc, e;
 
     print("\223\005\022USER\222RESTORE\n\n");
     print("Drive to use (8-10)?\n>");
@@ -309,11 +309,11 @@ void restore() {
 
                         sprintf(O, "%-3i", id); print(O);
 
-                        cbm_read(3, rec, 75);
+                        cbm_read(3, rec, USER_RECLEN);
 
                         if (gotouser(id) == 0) {
 
-                            cbm_write(1, rec, 76);
+                            cbm_write(1, rec, USER_RECLEN);
 
                             e = errorcheck();
 
@@ -354,8 +354,8 @@ void create(char silent) {
 
     char yn, p[5], e, id;
     char filename[9] = "users,l,x";
-    char rec[76] = "\377ULL        NULL      NULL USER           NULLWHERE      0----------------\n";
-    filename[8] = 76;
+    char rec[USER_RECLEN] = "\377ULL        NULL      NULL USER           NULLWHERE      0----------------\n";
+    filename[8] = USER_RECLEN;
 
     p[0] = 'p';
     p[1] = 98;
@@ -394,7 +394,7 @@ void create(char silent) {
 
             p[2] = id;
             cbm_write(15, p, 5);
-            cbm_write(1, rec, strlen(rec));
+            cbm_write(1, rec, USER_RECLEN);
 
             putch(20);
             putch(20);
@@ -415,7 +415,7 @@ void create(char silent) {
 
         p[2] = 1;
         cbm_write(15, p, 5);
-        cbm_write(1, rec, strlen(rec));
+        cbm_write(1, rec, USER_RECLEN);
 
         e = errorcheck();
 
@@ -441,8 +441,8 @@ void deleteuser(char id) {
 
     char sid, yn = FALSE, p[5], e;
     char filename[9] = "users,l,x";
-    char rec[76];
-    filename[8] = 76;
+    char rec[USER_RECLEN];
+    filename[8] = USER_RECLEN;
 
     p[0] = 'p';
     p[1] = 98;
@@ -478,14 +478,14 @@ void deleteuser(char id) {
             e = errorcheck();
 
             cbm_write(15, p, 5);
-            cbm_read(1, rec, 76);
+            cbm_read(1, rec, USER_RECLEN);
 
             e = errorcheck();
 
             rec[0] = 255;
 
             cbm_write(15, p, 5);
-            cbm_write(1, rec, strlen(rec));
+            cbm_write(1, rec, USER_RECLEN);
             cbm_write(15, p, 5);
 
             e = errorcheck();
@@ -511,7 +511,7 @@ void deleteuser(char id) {
 
 void validateusers(void) {
 
-    char sid, id, rec[76], user[7], numcalls[6], lastcall[5], ch = 0;
+    char sid, id, rec[USER_RECLEN], user[7], numcalls[6], lastcall[5], ch = 0;
     int c = 0;
 
     sid = U.ID;
@@ -527,7 +527,7 @@ void validateusers(void) {
             if (gotouser(id) == 0) {
 
                 clear(rec);
-                cbm_read(1, rec, 76);
+                cbm_read(1, rec, USER_RECLEN);
 
                 strncpy(user, rec, 6);
                 user[6] = '\0';

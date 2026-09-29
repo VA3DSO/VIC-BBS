@@ -1,3 +1,21 @@
+USER LOG RE-WRITE
+-----------------
+Functions to edit:
+- open_userfile(mode) > switch from REL to SEQ, mode = 'r' or 'w'
+- gotouser(id) > for...next to correct record
+- loaduser(id) > read current record into struct
+- saveuser(id) > save current record into file
+- close_userfile() > no change? check 15 usage
+
+Functions to check:
+- newuser()
+- finduser()
+- genuserlist()
+- changepassword()
+- nextid() > only used for genuserlist?
+- edituser()
+
+
 ONLINE GAME IDEAS:
 ------------------
 - Beach Watcher

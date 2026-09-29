@@ -17,7 +17,7 @@ SYSOP   = sysop.prg
 # Default target
 all: $(BBS) $(GAMES) $(EDITOR) $(FILES) $(SYSOP)
 	@echo "All BBS programs built."
-	c1541 bbs.dhd < inst.txt
+	c1541 ~/BBS/bbs.dhd < inst.txt
 
 $(BBS): bbs.c common.c uutils.c futils.c
 	$(CC) $(CFLAGS) -o $@ bbs.c common.c uutils.c futils.c

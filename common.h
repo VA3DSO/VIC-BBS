@@ -30,6 +30,8 @@
 #define BS_JUMP      "jmp $a000"
 #define BS_ACTION    0xA100
 
+#define USER_RECLEN  76
+
 /* NOTE: all fields are n+1 in size to accomodate null termination */
 typedef struct {
     char ID;

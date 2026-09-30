@@ -84,6 +84,7 @@ char gpause();
 void print(char*);
 void cursor_on();
 void cursor_off();
+void cursor_flip();
 void beep();
 void sleep();
 char carrierdetect();

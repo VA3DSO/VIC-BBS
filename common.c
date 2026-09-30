@@ -39,6 +39,15 @@ void lprint(char *str) {
 void cursor_on(void) {
 
     if (CURSORSTATUS == OFF) {
+
+        /* SOLID CURSOR */
+        cursor_flip();
+        CURSORSTATUS = ON;
+
+    }
+
+    /* --- OLD BLINKY CURSOR
+    if (CURSORSTATUS == OFF) {
         POKE(212, 0);
         POKE(216, 0);
 
@@ -49,21 +58,52 @@ void cursor_on(void) {
         }
 
     }
+    */
 
 }
 
 void cursor_off(void) {
-        asm("ldy $cc");
-        asm("bne %g", exitloop);
-        asm("ldy #$01");
-        asm("sty $cd");
-        loop:
-        asm("ldy $cf");
-        asm("bne %g", loop);
-        exitloop:
-        asm("ldy #$ff");
-        asm("sty $cc");
+
+    if (CURSORSTATUS == ON) {
+
+        /* SOLID CURSOR */
+        cursor_flip();
         CURSORSTATUS = OFF;
+
+    }
+
+    /* --- OLD BLINKY CURSOR 
+    asm("ldy $cc");
+    asm("bne %g", exitloop);
+    asm("ldy #$01");
+    asm("sty $cd");
+    loop:
+    asm("ldy $cf");
+    asm("bne %g", loop);
+    exitloop:
+    asm("ldy #$ff");
+    asm("sty $cc");
+    CURSORSTATUS = OFF;
+    */
+}
+
+void cursor_flip(void) {
+
+    unsigned char pos;
+    unsigned int line;
+    unsigned long mem;
+    unsigned char byte;
+
+    pos = PEEK(0x00D3);
+    line = PEEK(0x00D2) * 256;
+    line = line + PEEK(0x00D1);
+
+    mem = line + pos;
+
+    byte = PEEK(mem);
+    byte = (byte ^ 0x80);
+    POKE(mem, byte);
+
 }
 
 void beep(void) {

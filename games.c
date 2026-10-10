@@ -84,8 +84,8 @@ void main(void) {
                                 play_mastermind();
                                 break;
                             case '3':
-                                showfile("rsa intro", 8, TRUE, 0);
-                                /* bootstrap("RSA"); */
+                                /* showfile("rsa intro", 8, TRUE, 0); */
+                                bootstrap("RSA");
                                 break;
                             case 'X':
                                 running = FALSE;

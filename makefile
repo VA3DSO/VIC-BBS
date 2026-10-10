@@ -3,7 +3,9 @@
 CC      = cl65
 TARGET  = vic20
 CFG     = bbs.cfg
+GCFG    = rsa.cfg
 CFLAGS  = -t $(TARGET) --config $(CFG) -Cl -O -DEXP8K
+GFLAGS  = -t $(TARGET) --config $(GCFG) -Cl -O -DEXP8K
 
 # Output binaries
 BBS     = bbs.prg
@@ -11,13 +13,13 @@ GAMES   = games.prg
 EDITOR  = editor.prg
 FILES   = files.prg
 SYSOP   = sysop.prg
-#RSA     = rsa.prg
-#RSAB    = rsab.prg
+RSA     = rsa.prg
+RSAB    = rsab.prg
 
 # Default target
-all: $(BBS) $(GAMES) $(EDITOR) $(FILES) $(SYSOP)
+all: $(BBS) $(GAMES) $(EDITOR) $(FILES) $(SYSOP) $(RSA) $(RSAB)
 	@echo "All BBS programs built."
-	c1541 ~/BBS/bbs.dhd < inst.txt
+	c1541 bbsdev.dhd < inst.txt
 
 $(BBS): bbs.c common.c uutils.c futils.c
 	$(CC) $(CFLAGS) -o $@ bbs.c common.c uutils.c futils.c
@@ -35,11 +37,11 @@ $(SYSOP): sysop.c common.c uutils.c futils.c
 	$(CC) $(CFLAGS) -o $@ sysop.c common.c uutils.c futils.c
 
 # Uncomment and adapt when RSA is ready
-#$(RSA): rsa.c sm_common.c
-#	$(CC) $(CFLAGS) -o $@ rsa.c sm_common.c
-#
-#$(RSAB): rsab.c
-#	$(CC) $(CFLAGS) -o $@ rsab.c
+$(RSA): rsa.c sm_common.c
+	$(CC) $(GFLAGS) -o $@ rsa.c sm_common.c
+
+$(RSAB): rsab.c
+	$(CC) $(GFLAGS) -o $@ rsab.c
 
 clean:
 	rm -f *.o *.prg

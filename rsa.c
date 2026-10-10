@@ -1,25 +1,3 @@
-/*
- * WHERE I LEFT OFF:
- *
- * Okay, let's get rid of the "Items" list when showing a room. Instead, lets
- * tie the items to the NSEW descriptions. We'll have 1 item per direction.
- * So we'll need two descriptions for each direction - one with the item
- * present, and one with it taken. If we randomly drop an item in a room,
- * perhaps it can be near the doorway direction. Will have to figure out how
- * to handle dropping items in the hallway or elevator.
- *
- * Next, let's shorten the commands to just the first char: g for go, u for
- * use, t for take, etc. Then the first four chars of the last word for
- * the object (assuming they are all unique in that way). That will save
- * bytes in the program, and let "pros" navigate through the game faster.
- *
- * Need a mirror counter and what to do when it disintegrates. The rest of the
- * game seems pretty straight forward. Double check that you have all the
- * finishing scenarios figured out.
- *
- *
- */
-
 #include <cbm.h>
 #include <vic20.h>
 #include <peekpoke.h>
@@ -29,62 +7,8 @@
 #include <string.h>
 #include "sm_common.h"
 #include "sm_global.h"
+#include "rsa.h"
 
-/* RED SECTOR A */
-#define NORTH 0
-#define SOUTH 1
-#define EAST  2
-#define WEST  3
-
-#define IMMOVABLE 0
-#define MOVABLE   1
-#define DONTSHOW  2
-
-#define MAXROOMS 17
-#define MAXITEMS 30
-
-#define KEY         0
-#define ACCESSCARD  2
-#define MIRROR      4
-#define FLASHLIGHT  5
-
-#define CRYOCHAMBER 0
-#define SERVERROOM  2
-#define BARRACKS    9
-#define HALLWAY1    1
-#define HALLWAY2    4
-#define HALLWAY3    7
-#define HALLWAY4    10
-#define ELEVATOR    12
-
-typedef struct {
-    char description[2];                    // char[0] = A/B/C/D (string len), char[1] = string number
-    char abbrev;                            // pointer to Abbreviation string
-    char type;                              // IMMOVABLE / MOVABLE / DONTSHOW
-    char room;                              // pointer to room where item is (255 if taken)
-    char direction;                         // NORTH / SOUTH / EAST / WEST
-} Item;
-
-typedef struct {
-    char name[2];                           // char[0] = A/B/C/D (string len), char[1] = string number
-    char locked;                            // TRUE / FALSE
-    char description[2];                    // char[0] = A/B/C/D (string len), char[1] = string number
-    char doors[4];                          // pointer to other room or 255 for no exit
-    char dirdesc[4][2];                     // N/S/E/W description
-} Room;
-
-void play_red_sector_a();
-void showRoom(int, char);
-int dirLookup(char*);
-char inHallway(int);
-
-#pragma bss-name ("BDATA")
-Room rooms[MAXROOMS];
-Item items[MAXITEMS];
-char out[64];
-#pragma bss-name ("LDATA")
-char str[95][32];
-#pragma bss-name ("BSS")   // switch back to default
 char dronesDisabled = FALSE;
 
 void main() {
@@ -104,7 +28,9 @@ void main() {
         play_red_sector_a();
     }
 
-    // -- bootstrap("GAMES");
+    /* re-enable for BBS connectivity! 
+    bootstrap("GAMES");
+    */
 
 }
 
@@ -117,17 +43,18 @@ void play_red_sector_a() {
     char subject[20];
     char paction[10];
     char psubject[20];
-    int currentRoom = 0;
-    int inventoryCount = 0;
-    int mirrorUses = 0;
-    int droneAware = 0;
+    signed char lastSpace = -1;
+    char currentRoom = 0;
+    char inventoryCount = 0;
+    char mirrorUses = 0;
     char flashlightON = FALSE;
-    int i, j, f, len, dir;
-    int tries = 0;
-    char *datafile = "1:rsa data";
-    char *strfile = "1:rsa strings";
+    char i, j, f, k, len, dir;
+    char tries = 0;
+    char *lowramfile = "@1:rsa low";
+    char *highramfile = "@1:rsa high";
 
-    /* showfile("rsa intro", FALSE);
+    /* uncomment for PROD! 
+    showfile("rsa intro", FALSE);
 
     print("\n\nInstructions (Y/N)?");
     yn = get_command();
@@ -135,30 +62,30 @@ void play_red_sector_a() {
     if (yn == 'Y') {
         showfile("rsa inst", TRUE);
     }
-
     */
 
     print("\223\005Loading data...");
 
     cbm_k_setlfs(3, 8, 1);
-    cbm_k_setnam(datafile);
+    cbm_k_setnam(lowramfile);
     cbm_k_load(0, 1);
 
     cbm_k_setlfs(3, 8, 1);
-    cbm_k_setnam(strfile);
+    cbm_k_setnam(highramfile);
     cbm_k_load(0, 1);
 
-    print(str[0]); print(str[1]);  // >>> RED SECTOR A <<<
+    showstr(strd[STRD_RSA], D, 2);                      // >>> RED SECTOR A <<<
 
-    showRoom(currentRoom, flashlightON);
+    showRoom(currentRoom, flashlightON);                // start in Cryo Chamber
 
+    /* COMMAND PARSER */
     do {
 
-        print(str[2]); // >
+        showstr(stra[STRA_GAME_PROMPT], A, 0);
+
         input(0, 32);
         trim(I);
 
-        /* process commands here */
         /*
          * COMMANDS:
          *         - go/run (north, south, east, west)
@@ -168,257 +95,244 @@ void play_red_sector_a() {
          *         - help
          */
 
-        /* parse command into action and subject */
+        /* backup action and subject for unique situations */
         if (strlen(action) > 0) {
             strcpy(paction, action);
         }
-        clear(action);
-        i = 0;
-        while((I[i] != 13) && (I[i] != 0) && (I[i] != 32)) {
-            i++;
-        }
-        strncpy(action, &I[0], i);
-        trim(strlower(action));
-
-        len = strlen(I);
-        while ((len >= 0) && I[len] != 32) {
-            len--;
-        }
-
         if (strlen(subject) > 0) {
             strcpy(psubject, subject);
         }
-        clear(subject);
-        j = strlen(I) - len;
-        strncpy(subject, &I[len], j);
+
+        /* parse command into action and subject */
+        parse_input(I, action, subject);
+        trim(strlower(action));
         trim(strlower(subject));
 
         if (strcmp(action, "look") == 0) {
-            if ((strcmp(subject, "") == 0) || (strcmp(subject, "around") == 0))  {
+            if ((strcmp(subject, "") == 0) || (strcmp(subject, "around") == 0)) {
                 showRoom(currentRoom, flashlightON);
             } else if ((currentRoom == BARRACKS) && (flashlightON == FALSE)) {
-                print("\nYou see:\nnothing!\n");
+                showstr(strc[STRC_NOTHING], C, 0);
             } else {
                 dir = dirLookup(subject);
-                if (dir > -1) {
-                    print(str[3]);  // You see:
-                    print(rooms[currentRoom].dirdesc[dir]);
-                    print(str[4]);  // \n\n
+                if (dir == NORTH || dir == SOUTH || dir == EAST || dir == WEST) {
+                    showstr(strb[STRB_YOU_SEE], B, 1);
+                    /* EDGE CASES */
+                    f = FALSE;
+                    if (currentRoom == CRYOCHAMBER) {
+
+                        /* West wall: poster */
+                        if (dir == WEST && items[POSTER].room != CRYOCHAMBER) {
+                            showstr(strd[STRD_CRYO_POSTER_GONE], D, 1);
+                            f = TRUE;
+                        }
+
+                        /* East wall: mirror */
+                        if (dir == EAST && items[MIRROR].room != CRYOCHAMBER) {
+                            showstr(strd[STRD_CRYO_MIRROR_GONE], D, 1);
+                            f = TRUE;
+                        }
+                    }
+
+                    /* Default: normal directional description */
+                    if (f == FALSE) {
+                        showstr_by_type(rooms[currentRoom].dirdesc[dir][0], rooms[currentRoom].dirdesc[dir][1], 1);
+                    }
+
                 } else {
-                    print(str[5]);  // huh?
+                    showstr(stra[STRA_GAME_HUH], A, 2);         // huh?
                 }
             }
         } else if (strcmp(action, "go") == 0) {
             dir = dirLookup(subject);
-            if (dir > -1) {
-                if (rooms[currentRoom].doors[dir] > -1) {
+            if (dir == NORTH || dir == SOUTH || dir == EAST || dir == WEST) {
+                if (rooms[currentRoom].doors[dir] != NO_EXIT) {
                     if (rooms[rooms[currentRoom].doors[dir]].locked == FALSE) {
                         currentRoom = rooms[currentRoom].doors[dir];
                         showRoom(currentRoom, flashlightON);
                     } else {
-                        if (items[KEY].taken == TRUE) {
+                        if (items[KEYS].room == TAKEN) {
                             rooms[rooms[currentRoom].doors[dir]].locked = FALSE;
-                            print(str[6]);  // You've unlocked the door!
+                            showstr(strc[STRC_YOU_UNLOCKED_DOOR], C, 0);
                             currentRoom = rooms[currentRoom].doors[dir];
                             showRoom(currentRoom, flashlightON);
                         } else {
-                            print(str[7]);  // The door is locked.
+                            showstr(strc[STRC_DOOR_LOCKED], C, 0);
                         }
                     }
                 } else {
-                    print(str[8]);  // You can't go that way.
+                    showstr(strc[STRC_CANT_GO_THAT_WAY], C, 0);
                 }
             } else {
-                print(str[9]);  // You can't go that way!
+                showstr(strc[STRC_CANT_GO_THAT_WAY], C, 0);
             }
         } else if (strcmp(action, "take") == 0) {
             if (inventoryCount < 5) {
                 f = FALSE;
-                for (i = 0; i < 4; i++) {
-                    if (strcmp(items[rooms[currentRoom].itemIndex[i]].abbrev, subject) == 0) {
-                        if ((items[rooms[currentRoom].itemIndex[i]].taken == FALSE) && (items[rooms[currentRoom].itemIndex[i]].type == MOVABLE)) {
-                            items[rooms[currentRoom].itemIndex[i]].taken = TRUE;
-                            rooms[currentRoom].itemIndex[i] = -1;
+                /* set subject to only first four letters */
+                for (i = 4; i < strlen(subject); i++) {
+                    subject[i] = 0;
+                }
+                for (i = 0; i < MAXITEMS; i++) {
+                    if (strcmp(stra[items[i].abbrev], subject) == 0) {
+                        if ((items[i].room != TAKEN) && (items[i].type == MOVABLE)) {
+                            items[i].room = TAKEN;
                             inventoryCount++;
-                            print(str[10]); // Taken!
+                            showstr(strb[STRB_TAKEN], B, 0);
                             f = TRUE;
                             break;
                         } else {
-                            print(str[11]); // You can't take that.
-                            f = TRUE;
+                            showstr(strc[STRC_CANT_TAKE_THAT], C, 0);
                         }
                     }
                 }
                 if (f == FALSE) {
-                    print(str[12]); // Nothing to take!
+                    showstr(strb[STRB_NOTHING_TO_TAKE], B, 1);
                 }
             } else {
-                print(str[13]);  // You can't carry any more!
+                showstr(strc[STRC_CANT_CARRY_ANYMORE], C, 0);
             }
         } else if (strcmp(action, "drop") == 0) {
-            f = FALSE;
-            for (i = 0; i < MAXITEMS; i++) {
-                if (strcmp(items[i].abbrev, subject) == 0) {
-                    for (j = 0; j < 4; j++) {
-                        if (rooms[currentRoom].itemIndex[j] == -1) {
-                            rooms[currentRoom].itemIndex[j] = i;
-                            items[i].taken = FALSE;
-                            print(str[14]);  // Dropped.
+            if (inventoryCount > 0) {
+                f = FALSE;
+                /* set subject to only first four letters */
+                for (i = 4; i < strlen(subject); i++) {
+                    subject[i] = 0;
+                }
+                for (i = 0; i < MAXITEMS; i++) {
+                    if (strcmp(stra[items[i].abbrev], subject) == 0) {
+                        if (items[i].room == TAKEN) {
+                            items[i].room = currentRoom;
                             inventoryCount--;
+                            showstr(strb[STRB_DROPPED], B, 0);
                             f = TRUE;
                             break;
-                        }
-                    }
-                    if (j == 4) {
-                        print(str[15]);  // You can't drop that here.
-                    }
-                    if (f == TRUE) {
-                        break;
-                    }
-                }
-            }
-            if (f == FALSE) {
-                print(str[16]);  // You can't drop that.
-            }
-        } else if (strcmp(action, "use") == 0) {
-            if ((strcmp(subject, "terminal") == 0) && (currentRoom == SERVERROOM)) {
-                if (tries < 3) {
-                    print(str[17]);  // ENTER PASSWORD:
-                    input(0, 12);
-                    trim(I);
-                    if (strcmp(I, "4fter1mage") == 0) {
-                        print(str[18]); print(str[19]);  // SUCCESS! Drones have been DISABLED!
-                        dronesDisabled = TRUE;
-                    } else {
-                        print(str[20]);  // INCORRECT.
-                        tries++;
-                    }
-                } else {
-                    print(str[21]);  // TERMINAL LOCKED.
-                }
-            } else if ((strcmp(subject, "flashlight") == 0) && (items[FLASHLIGHT].taken == TRUE)) {
-                if (flashlightON == FALSE) {
-                    flashlightON = TRUE;
-                    print(str[38]);  // Flashlight ON!
-                } else {
-                    flashlightON = FALSE;
-                    print(str[39]);  // Flashlight OFF!
-                }
-            } else if ((strcmp(subject, "card") == 0) && (items[ACCESSCARD].taken == TRUE)) {
-                if (currentRoom == ELEVATOR){
-                    if ((strcmp(paction, "run") == 0) || (strcmp(paction, "go") == 0)) {
-                        if (strcmp(psubject, "east") == 0) {
-                            /* we came from hallway 10 -> take us to yard 13 */
-                            currentRoom = 13;
                         } else {
-                            currentRoom = 10;
+                            showstr(strc[STRB_NOTHING_TO_DROP], C, 0);
                         }
-                        print(str[41]); print(str[42]); print(str[43]); print(str[44]); // Elevator ride!
-                        showRoom(currentRoom, flashlightON);
-                    } else {
-                        print(str[40]);  // That did nothing.
                     }
-                } else {
-                    print(str[40]);  // That did nothing.
                 }
-            } else if ((strcmp(subject, "mirror") == 0) && (items[MIRROR].taken == TRUE)) {
-                if  ((inHallway(currentRoom) == TRUE) && (droneAware == 3)) {
-                    print("Deflected!\n");
-                    droneAware = 1;
-                } else {
-                    print("Don't you look pretty!\n");
+                if (f == FALSE) {
+                    showstr(strb[STRB_NOTHING_TO_DROP], B, 1);
                 }
             } else {
-                print(str[22]);  // You can't use that.
+                showstr(strc[STRB_NOTHING_TO_DROP], C, 0);
             }
-        } else if (strcmp(action, "inventory") == 0) {
+        } else if (strncmp(action, "inventory", 3) == 0){
+            showstr(strb[STRB_YOUVE_GOT], B, 1);
             if (inventoryCount > 0) {
                 for (i = 0; i < MAXITEMS; i++) {
-                    if (items[i].taken == TRUE) {
-                        sprintf(out, "-%s\n", items[i].name); print(out);
+                    if (items[i].room == TAKEN) {
+                        putch(DASH);
+                        showstr_by_type(items[i].name[STR_T], items[i].name[STR_N], 1);
                     }
                 }
             } else {
-                print(str[23]);  // You don't have anything.
+                putch(DASH);
+                showstr(strb[STRB_NOTHING], B, 1);
             }
         } else if (strcmp(action, "quit") == 0) {
-            print(str[24]);  // Leaving!
             playing = FALSE;
-            dead = TRUE;
-        } else if (strcmp(action, "help") == 0) {
-            showfile("rsa help", FALSE);
         } else {
-            print(str[25]);  // Huh?
-        }
-
-        st = carrierdetect();
-
-        if (st == FALSE) {
-            playing = FALSE;
-            dead = TRUE;
-        }
-
-        if ((playing == TRUE) && (dronesDisabled == FALSE) && (inHallway(currentRoom) == TRUE)) {
-            droneAware++;
-            switch (droneAware) {
-                case 1:
-                    print(str[26]); print(str[27]);  // The attack drones have spotted you!
-                    break;
-                case 2:
-                    print(str[28]); print(str[29]);  // The attack drones are taking aim!
-                    break;
-                case 3:
-                    print(str[30]); print(str[31]);  // The attack drones are firing!
-                    break;
-                case 4:
-                    print(str[32]); print(str[33]);  // The drones find their mark! You are DEAD.
-                    dead = TRUE;
-                    playing = FALSE;
-                    break;
-            }
-        } else {
-            droneAware = 0;
+            showstr(stra[STRA_GAME_HUH], A, 2);         // huh?
         }
 
     } while (playing == TRUE);
 
+    /*
     if (dead == TRUE) {
         print(str[34]); print(str[35]);  // Ah, you gave it your best shot, right?
     } else {
         print(str[36]); print(str[37]);  // CONGRATS! You made it!
     }
+    */
 
     gpause();
     print("\n");
+
 }
 
-void showRoom(int roomNum, char lightMode) {
+void showRoom(char roomNum, char lightMode) {
 
-    int i;
-    int f = FALSE;
+    char i;
+    char f = FALSE;
 
-    sprintf(out, "\n\022%s\222\n\n%s", rooms[roomNum].name, rooms[roomNum].description); print(out);
-    if ((roomNum == 1) && (dronesDisabled == FALSE)) {
-        print(str[45]);
-    } else {
-        print("\n");
+    // show room name and description
+    showstr_by_type(rooms[roomNum].name[0], rooms[roomNum].name[1], 2);
+    showstr_by_type(rooms[roomNum].description[0], rooms[roomNum].description[1], 2);
+
+    if ((roomNum ==1) && (dronesDisabled == FALSE)) {
+        showstr(strc[STRC_BUZZING], C, 1);
     }
-    print("\n\nItems here:\n");
+
+    showstr(strb[STRB_ITEMS_HERE], B, 0);
+
     if ((roomNum == BARRACKS) && (lightMode == FALSE)) {
         // do nothing!
     } else {
-        for (i = 0; i < 4; i++) {
-            if ((rooms[roomNum].itemIndex[i] != -1 && items[rooms[roomNum].itemIndex[i]].taken == FALSE)) {
-                sprintf(out, "-%s\n", items[rooms[roomNum].itemIndex[i]].name); print(out);
+        // show room items
+        for (i = 0; i < MAXITEMS; i++) {
+            if (items[i].room == roomNum) {
+                // show this item!
+                putch(DASH);
+                showstr_by_type(items[i].name[0], items[i].name[1], 1);
                 f = TRUE;
             }
         }
     }
 
     if (f == FALSE) {
-        print("-nothing\n\n");
-    } else {
-        print("\n");
+        print("-nothing\n");
+    }
+}
+
+void showstr_by_type(char type, char index, char numCR) {
+
+    const char *src;
+    char len;
+    char i;
+
+    switch (type) {
+        case A:
+            src = stra[index];
+            break;
+
+        case B:
+            src = strb[index];
+            break;
+
+        case C:
+            src = strc[index];
+            break;
+
+        case D:
+            src = strd[index];
+            break;
+
+        default:
+            return;   // invalid type, do nothing
+    }
+
+    showstr(src, type, numCR);
+
+}
+
+
+void showstr(const char *src, char len, char numCR) {
+
+    char i;
+
+    // print designated string - end early if zero terminated
+    for (i = 0; i < len; i++) {
+        if (src[i] == 0) break;
+        putch(src[i]);
+    }
+
+    // print the number of carriage returns in numCR
+    if (numCR > 0) {
+        for (i = 0; i < numCR; i++) {
+            putch(RETURN);
+        }
     }
 
 }
@@ -441,7 +355,7 @@ int dirLookup(char* direction) {
 
 }
 
-char inHallway(int roomNum) {
+char inHallway(char roomNum) {
 
     char Result = FALSE;
 
@@ -451,4 +365,47 @@ char inHallway(int roomNum) {
 
     return Result;
 
+}
+
+void parse_input(const char *input, char *action, char *subject) {
+
+    /* NOTE: This function written by Microsoft Copilot */
+
+    int a, i, s;
+    int len = strlen(input);
+
+    // Clear outputs
+    action[0] = 0;
+    subject[0] = 0;
+    i = 0;
+
+    // Skip leading spaces
+    while (i < len && input[i] == ' ')
+        i++;
+
+    // If empty input, done
+    if (i >= len)
+        return;
+
+    // Copy action until space or end
+    a = 0;
+    while (i < len && input[i] != ' ' && a < 39) {
+        action[a++] = tolower(input[i++]);
+    }
+    action[a] = 0;
+
+    // Skip spaces between action and subject
+    while (i < len && input[i] == ' ')
+        i++;
+
+    // If no subject, done
+    if (i >= len)
+        return;
+
+    // Copy subject until next space or end
+    s = 0;
+    while (i < len && input[i] != ' ' && s < 39) {
+        subject[s++] = tolower(input[i++]);
+    }
+    subject[s] = 0;
 }

@@ -53,16 +53,14 @@ void play_red_sector_a() {
     char *lowramfile = "@1:rsa low";
     char *highramfile = "@1:rsa high";
 
-    /* uncomment for PROD! 
     showfile("rsa intro", FALSE);
 
     print("\n\nInstructions (Y/N)?");
     yn = get_command();
 
     if (yn == 'Y') {
-        showfile("rsa inst", TRUE);
+        showfile("rsa help", TRUE);
     }
-    */
 
     print("\223\005Loading data...");
 
@@ -231,8 +229,19 @@ void play_red_sector_a() {
                 putch(DASH);
                 showstr(strb[STRB_NOTHING], B, 1);
             }
+        } else if (strcmp(action, "help") == 0) {
+
+            showfile("rsa help", TRUE);
+
         } else if (strcmp(action, "quit") == 0) {
-            playing = FALSE;
+
+            print("\n\nAre you sure? (Y/N)?");
+            yn = get_command();
+
+            if (yn == 'Y') {
+                    playing = FALSE;
+            }
+
         } else {
             showstr(stra[STRA_GAME_HUH], A, 2);         // huh?
         }

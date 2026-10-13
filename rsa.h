@@ -15,6 +15,7 @@
 #define STRA_MIRR 2
 #define STRA_POST 3
 #define STRA_KEYS 4
+#define STRA_COMP 5
 
 /* B STRINGS */
 #define STRB_YOU_SEE 0
@@ -32,6 +33,8 @@
 #define STRB_NOTHING 12
 #define STRB_DROPPED 13
 #define STRB_NOTHING_TO_DROP 14
+#define STRB_INCORRECT 15
+#define STRB_TERMINAL_LOCKED 16
 
 /* C STRINGS */
 #define STRC_BUZZING 0
@@ -47,6 +50,10 @@
 #define STRC_SERVERROOM_NORTH_HALLWAY 10
 #define STRC_CANT_TAKE_THAT 11
 #define STRC_CANT_CARRY_ANYMORE 12
+#define STRC_THAT_DIDNT_WORK 13
+#define STRC_SERVERROOM_COMPUTER 14
+#define STRC_ENTER_PASSWORD 15
+#define STRC_COMPUTER_TERMINAL 16
 
 /* D STRINGS */
 #define STRD_RSA 0
@@ -60,10 +67,11 @@
 #define STRD_SERVERROOM_WEST_WIRES 8
 #define STRD_CRYO_POSTER_GONE 9
 #define STRD_CRYO_MIRROR_GONE 10
+#define STRD_DRONES_DISABLED 11
 
 /* GAME PARAMETERS */
 #define MAXROOMS 3
-#define MAXITEMS 3
+#define MAXITEMS 4
 
 #define NORTH 0
 #define SOUTH 1
@@ -102,7 +110,7 @@
 #define MIRROR      0
 #define POSTER      1
 #define KEYS        2
-#define CATCABLE    3
+#define COMPUTER    3
 #define STAPLER     4
 #define CELLPHONE   5
 #define MICROSCOPE  6
@@ -119,7 +127,7 @@
 #define FOODTRAY    18
 #define WIRECUTTERS 19
 #define BUCKET      20
-#define COMPUTER    21
+#define CATCABLE    21
 #define COFFEECUP   22
 #define BOOTS       23
 #define GOLFCLUB    24
@@ -190,5 +198,6 @@ void showstr_by_type(char, char, char);
 void showstr(const char*, char, char);
 
 void parse_input(const char *, char *, char *);
+char check(const char *);
 
 char O[40];

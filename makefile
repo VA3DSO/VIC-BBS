@@ -17,7 +17,7 @@ RSA     = rsa.prg
 RSAB    = rsab.prg
 
 # Default target
-all: $(BBS) $(GAMES) $(EDITOR) $(FILES) $(SYSOP) $(RSA) $(RSAB)
+all: $(BBS) $(GAMES) $(EDITOR) $(FILES) $(SYSOP) #$(RSA) $(RSAB)
 	@echo "All BBS programs built."
 	c1541 bbsdev.dhd < inst.txt
 
@@ -37,11 +37,11 @@ $(SYSOP): sysop.c common.c uutils.c futils.c
 	$(CC) $(CFLAGS) -o $@ sysop.c common.c uutils.c futils.c
 
 # Uncomment and adapt when RSA is ready
-$(RSA): rsa.c sm_common.c
-	$(CC) $(GFLAGS) -o $@ rsa.c sm_common.c
+# $(RSA): rsa.c sm_common.c
+#	$(CC) $(GFLAGS) -o $@ rsa.c sm_common.c
 
-$(RSAB): rsab.c
-	$(CC) $(GFLAGS) -o $@ rsab.c
+# $(RSAB): rsab.c
+#	$(CC) $(GFLAGS) -o $@ rsab.c
 
 clean:
 	rm -f *.o *.prg

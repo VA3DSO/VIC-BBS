@@ -491,7 +491,7 @@ char get_command() {
 
 }
 
-void input(int min, int max) {
+void input(char fmt, int min, int max) {
 
     int i;
     char done = FALSE, ch;
@@ -530,9 +530,13 @@ void input(int min, int max) {
             if ((ch != 17) && (ch != 19) && (ch != 29) && (ch != 145) && (ch != 147) && (ch != 148) && (ch != 157)) {
                 I[i] = ch;
                 i++;
-                putch(ch);
+                if (fmt == 'P') {
+                    putch('*');
+                } else {
+                    putch(ch);
+    
+                }
             }
-
         }
 
     } while (done == FALSE);

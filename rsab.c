@@ -34,13 +34,14 @@ void main(void) {
     setstr(strb[STRB_NOTHING_TO_DROP], "Nothing to drop!", B);
 
     setstr(strc[STRC_NOTHING], "\nYou see:\nnothing!\n", C);
-    setstr(strc[STRC_BUZZING], "There's a buzzing\nnoise...", C);
+    setstr(strc[STRC_BUZZING], "There's a buzzing\nnoise...\n", C);
     setstr(strc[STRC_CANT_TAKE_THAT], "You can't take that.\n", C);
     setstr(strc[STRC_CANT_CARRY_ANYMORE], "You can't carry any\nmore!\n", C);
     
     setstr(strc[STRC_YOU_UNLOCKED_DOOR], "You've unlocked the\ndoor!\n", C);
     setstr(strc[STRC_DOOR_LOCKED], "The door is locked.\n", C);
     setstr(strc[STRC_CANT_GO_THAT_WAY], "You can't go that\nway!\n", C);
+    setstr(strc[STRC_THAT_DIDNT_WORK], "Well that didn't\nwork!\n", C);
 
     setstr(strd[STRD_RSA], "\223\034>>> \022RED\222 \022\005SECTOR\222\034 \022A\222 <<<\005", D);
 
@@ -129,7 +130,7 @@ void main(void) {
     rooms[HALLWAY1].dirdesc[EAST][STR_N] = STRB_HALLWAY1_EAST_MORE_HALLWAY;
     rooms[HALLWAY1].dirdesc[WEST][STR_T] = D;
     rooms[HALLWAY1].dirdesc[WEST][STR_N] = STRD_HALLWAY1_WEST_WINDOW;
-    
+
     setstr(strb[STRB_HALLWAY1_NAME], "Hallway", B);
     setstr(strc[STRC_HALLWAY1_DESC], "There are rows of\nclosed doors.", C);
     setstr(strd[STRD_HALLWAY1_NORTH_CRYO_CHAMBER], "A door leading to\nthe cryo chamber.", D);
@@ -158,12 +159,29 @@ void main(void) {
     rooms[SERVERROOM].dirdesc[WEST][STR_T] = D;
     rooms[SERVERROOM].dirdesc[WEST][STR_N] = STRD_SERVERROOM_WEST_WIRES;
     
+    items[COMPUTER].name[STR_T] = C;
+    items[COMPUTER].name[STR_N] = STRC_COMPUTER_TERMINAL;
+    items[COMPUTER].abbrev = STRA_COMP;
+    items[COMPUTER].type = IMMOVABLE;
+    items[COMPUTER].room = SERVERROOM;
+    items[COMPUTER].direction = SOUTH;
+
+    setstr(stra[STRA_COMP], "comp", A);
+
     setstr(strb[STRB_SERVERROOM_NAME], "Server Room", B);
-    setstr(strd[STRD_SERVERROOM_DESC], "You're in a room that\nreeks of ozone.", D);
+    setstr(strb[STRB_INCORRECT], "INCORRECT.\n", B);
+    setstr(strb[STRB_TERMINAL_LOCKED], "TERMINAL LOCKED.", B);
+
     setstr(strc[STRC_SERVERROOM_NORTH_HALLWAY], "A door leading to a\nhallway.", C);
+    setstr(strc[STRC_SERVERROOM_COMPUTER], "Computer Terminal\n", C);
+    setstr(strc[STRC_ENTER_PASSWORD], "\nENTER PASSWORD:\n", C);
+    setstr(strc[STRC_COMPUTER_TERMINAL], "computer terminal", C);
+
+    setstr(strd[STRD_SERVERROOM_DESC], "You're in a room that\nreeks of ozone.", D);
     setstr(strd[STRD_SERVERROOM_SOUTH_SERVER_RACKS], "Rows and rows of\ndishevelled server\nracks.", D);
     setstr(strd[STRD_SERVERROOM_EAST_WHITEBOARD], "A whiteboard with\nsmeared network\ndiagrams on it.", D);
     setstr(strd[STRD_SERVERROOM_WEST_WIRES], "The west wall is\ncracked, wires hang\nloose and sparking.", D);
+    setstr(strd[STRD_DRONES_DISABLED], "\nSUCCESS! Drones have\nbeen DISABLED!\n", D);
 
     //-------------------------------------------------------------------------------
     // --- SAVE TO DISK ---

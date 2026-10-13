@@ -55,7 +55,7 @@ typedef struct {
 /* common functions */
 int showfile(char*, char);
 void putch(char);
-void input(int, int);
+void input(char, int, int);
 char getch();
 char errorcheck();
 void showerr(char*);

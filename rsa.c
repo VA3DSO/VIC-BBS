@@ -9,6 +9,7 @@
 #include "sm_global.h"
 #include "rsa.h"
 
+/* local variables - move to rsa.h? */
 char dronesDisabled = FALSE;
 
 void main() {
@@ -53,6 +54,7 @@ void play_red_sector_a() {
     char *lowramfile = "@1:rsa low";
     char *highramfile = "@1:rsa high";
 
+    /* UNCOMMNET FOR PRODUCTION
     showfile("rsa intro", FALSE);
 
     print("\n\nInstructions (Y/N)?");
@@ -61,7 +63,9 @@ void play_red_sector_a() {
     if (yn == 'Y') {
         showfile("rsa help", TRUE);
     }
+    */
 
+    /* LOAD BINARY DATA FILES */
     print("\223\005Loading data...");
 
     cbm_k_setlfs(3, 8, 1);
@@ -72,6 +76,7 @@ void play_red_sector_a() {
     cbm_k_setnam(highramfile);
     cbm_k_load(0, 1);
 
+    /* START OF GAME */
     showstr(strd[STRD_RSA], D, 2);                      // >>> RED SECTOR A <<<
 
     showRoom(currentRoom, flashlightON);                // start in Cryo Chamber
@@ -81,7 +86,7 @@ void play_red_sector_a() {
 
         showstr(stra[STRA_GAME_PROMPT], A, 0);
 
-        input(0, 32);
+        input('A', 0, 32);
         trim(I);
 
         /*
@@ -107,12 +112,21 @@ void play_red_sector_a() {
         trim(strlower(subject));
 
         if (strcmp(action, "look") == 0) {
+
+            /* LOOK */
+
             if ((strcmp(subject, "") == 0) || (strcmp(subject, "around") == 0)) {
+
                 showRoom(currentRoom, flashlightON);
+
             } else if ((currentRoom == BARRACKS) && (flashlightON == FALSE)) {
+
                 showstr(strc[STRC_NOTHING], C, 0);
+
             } else {
+
                 dir = dirLookup(subject);
+
                 if (dir == NORTH || dir == SOUTH || dir == EAST || dir == WEST) {
                     showstr(strb[STRB_YOU_SEE], B, 1);
                     /* EDGE CASES */
@@ -142,21 +156,18 @@ void play_red_sector_a() {
                 }
             }
         } else if (strcmp(action, "go") == 0) {
+            
+            /* GO */
+
             dir = dirLookup(subject);
+
             if (dir == NORTH || dir == SOUTH || dir == EAST || dir == WEST) {
                 if (rooms[currentRoom].doors[dir] != NO_EXIT) {
                     if (rooms[rooms[currentRoom].doors[dir]].locked == FALSE) {
                         currentRoom = rooms[currentRoom].doors[dir];
                         showRoom(currentRoom, flashlightON);
                     } else {
-                        if (items[KEYS].room == TAKEN) {
-                            rooms[rooms[currentRoom].doors[dir]].locked = FALSE;
-                            showstr(strc[STRC_YOU_UNLOCKED_DOOR], C, 0);
-                            currentRoom = rooms[currentRoom].doors[dir];
-                            showRoom(currentRoom, flashlightON);
-                        } else {
-                            showstr(strc[STRC_DOOR_LOCKED], C, 0);
-                        }
+                        showstr(strc[STRC_DOOR_LOCKED], C, 0);
                     }
                 } else {
                     showstr(strc[STRC_CANT_GO_THAT_WAY], C, 0);
@@ -165,6 +176,9 @@ void play_red_sector_a() {
                 showstr(strc[STRC_CANT_GO_THAT_WAY], C, 0);
             }
         } else if (strcmp(action, "take") == 0) {
+
+            /* TAKE */
+
             if (inventoryCount < 5) {
                 f = FALSE;
                 /* set subject to only first four letters */
@@ -191,6 +205,9 @@ void play_red_sector_a() {
                 showstr(strc[STRC_CANT_CARRY_ANYMORE], C, 0);
             }
         } else if (strcmp(action, "drop") == 0) {
+
+            /* DROP */
+
             if (inventoryCount > 0) {
                 f = FALSE;
                 /* set subject to only first four letters */
@@ -216,7 +233,75 @@ void play_red_sector_a() {
             } else {
                 showstr(strc[STRB_NOTHING_TO_DROP], C, 0);
             }
+
+        } else if (strcmp(action, "use") == 0) {
+
+            /* USE */
+
+            f = FALSE;
+
+            if (((strncmp(subject, "term", 4) == 0) || (strncmp(subject, "comp", 4) == 0)) && (currentRoom == SERVERROOM)) {
+                
+                if (tries < 3) {
+
+                    showstr(strc[STRC_ENTER_PASSWORD], C, 0);
+
+                    input('P', 0, 12);
+                    trim(I);
+
+                    if (check(I) == TRUE) {
+
+                        /* SUCCESS! */
+                        showstr(strd[STRD_DRONES_DISABLED], D, 0);
+                        dronesDisabled = TRUE;
+                        f = TRUE;
+
+                    } else {
+
+                        /* INCORRECT */
+                        showstr(strb[STRB_INCORRECT], B, 0);
+                        tries++;
+                        f = TRUE;
+
+                    }
+
+                } else {
+
+                    showstr(strb[STRB_TERMINAL_LOCKED], B, 1);
+                    f = TRUE;
+
+                }
+
+            }
+
+
+            if (strcmp(subject, "keys") == 0 && items[KEYS].room == TAKEN && strlen(paction) > 0 && strlen(psubject) > 0) {
+
+                if (strcmp(paction, "go") == 0) {
+
+                    dir = dirLookup(psubject);
+
+                    if (dir == NORTH || dir == SOUTH || dir == EAST || dir == WEST) {
+
+                        if (rooms[rooms[currentRoom].doors[dir]].locked == TRUE) {
+
+                            rooms[rooms[currentRoom].doors[dir]].locked = FALSE;
+                            showstr(strc[STRC_YOU_UNLOCKED_DOOR], C, 0);
+                            f = TRUE;
+
+                        } 
+                    }
+                }
+            }
+
+            if (f == FALSE) {
+                showstr(strc[STRC_THAT_DIDNT_WORK], C, 0);
+            }
+
         } else if (strncmp(action, "inventory", 3) == 0){
+
+            /* INVENTORY */
+
             showstr(strb[STRB_YOUVE_GOT], B, 1);
             if (inventoryCount > 0) {
                 for (i = 0; i < MAXITEMS; i++) {
@@ -231,9 +316,13 @@ void play_red_sector_a() {
             }
         } else if (strcmp(action, "help") == 0) {
 
+            /* HELP */
+
             showfile("rsa help", TRUE);
 
         } else if (strcmp(action, "quit") == 0) {
+
+            /* QUIT */
 
             print("\n\nAre you sure? (Y/N)?");
             yn = get_command();
@@ -267,10 +356,10 @@ void showRoom(char roomNum, char lightMode) {
     char f = FALSE;
 
     // show room name and description
-    showstr_by_type(rooms[roomNum].name[0], rooms[roomNum].name[1], 2);
-    showstr_by_type(rooms[roomNum].description[0], rooms[roomNum].description[1], 2);
+    showstr_by_type(rooms[roomNum].name[STR_T], rooms[roomNum].name[STR_N], 2);
+    showstr_by_type(rooms[roomNum].description[STR_T], rooms[roomNum].description[STR_N], 2);
 
-    if ((roomNum ==1) && (dronesDisabled == FALSE)) {
+    if ((inHallway(roomNum) == TRUE) && (dronesDisabled == FALSE)) {
         showstr(strc[STRC_BUZZING], C, 1);
     }
 
@@ -417,4 +506,31 @@ void parse_input(const char *input, char *action, char *subject) {
         subject[s++] = tolower(input[i++]);
     }
     subject[s] = 0;
+}
+
+char check(const char *input) {
+
+    char i, x;
+    char result = FALSE;
+
+    static const unsigned char S[11] = {
+        117, 35, 21, 38, 15, 114, 30, 34, 36, 38, 0
+    };
+
+    char buf[11];
+
+    for (i = 0; i < 10; i++) {
+        x = S[i];
+        x -= 7;
+        x ^= 0x5A;
+        buf[i] = (char)x;
+    }
+    buf[10] = '\0';
+
+    if (strcmp(buf, input) == 0) {
+        result = TRUE;
+    }
+
+    return(result);
+
 }

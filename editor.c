@@ -54,6 +54,10 @@ void main(void) {
 
         }
 
+        /* CLEAN UP */
+        memset(&I, 0, sizeof(I));
+        memset(&W, 0, sizeof(W));
+
         bootstrap("BBS");
 
     } else {

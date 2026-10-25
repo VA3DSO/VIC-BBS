@@ -411,6 +411,10 @@ void logon() {
 
     } while (done == FALSE);
 
+    /* CLEAN UP */
+    memset(&I, 0, sizeof(I));
+    memset(&W, 0, sizeof(W));
+
 }
 
 
@@ -475,7 +479,8 @@ void main_menu() {
                 bulletins();
                 break;
             case 'P':
-                strcpy(W, "");
+                memset(&I, 0, sizeof(I));
+                memset(&W, 0, sizeof(W));
                 post_message(0);
                 break;
             case 'R':

@@ -546,17 +546,6 @@ int showfile(char *filename, char drive, char pauseatend, int msgnum) {
                     fs = TRUE;
                 }
 
-                /* check for a space from the remote side to end viewing early */
-                cbm_k_chkin(5);
-                ch = cbm_k_getin();
-                cbm_k_clrch();
-                if (ch == ' ') {
-                    /* client requested early quit */
-                    st = 64;
-                    qe = TRUE;
-                    break;
-                }
-
                 if (a == 13) {
                     ln++;
                     c = 0;
